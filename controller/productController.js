@@ -1,0 +1,302 @@
+import productModel from "../models/productModel.js";
+import User from "../models/userModel.js";
+
+// create a product
+
+const createProduct = async (req, res) => {
+  try {
+    const { title, description, price, category, brand, quantity, images } =
+      req.body;
+    if (
+      !title ||
+      !description ||
+      !price ||
+      !category ||
+      !brand ||
+      !quantity ||
+      !images
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide all required fields.",
+      });
+    }
+    // Create new product instance
+    const product = new productModel({
+      title,
+      description,
+      price,
+      category,
+      brand,
+      quantity,
+      images,
+    });
+    const productSave = await product.save();
+    res.status(201).json({
+      success: true,
+      message: "Product created successfully",
+      product: productSave,
+    });
+  } catch (error) {
+    console.error("Failed to create product in database", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create product",
+    });
+  }
+};
+
+// update a product
+const updateProduct = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const updatedProductId = await productModel.findByIdAndUpdate(
+      id,
+      req.body,
+      { new: true }
+    );
+
+    if (!updatedProductId) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    } else {
+      res.json({
+        success: true,
+        message: "product updated successfully",
+        updatedProductId,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+// delete a product
+const deleteProduct = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const deleteProductId = await productModel.findByIdAndDelete(id);
+
+    if (!deleteProductId) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    } else {
+      res.json({
+        success: true,
+        message: "product delete successfully",
+        deleteProductId,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+// get all product
+const getAllProduct = async (req, res) => {
+  try {
+    const allProduct = await productModel.find({});
+    if (!allProduct) {
+      return res.status(404).json({
+        success: false,
+        message: "no product found",
+      });
+    } else {
+      res.json({
+        success: true,
+        message: "available product",
+        allProduct,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.json({
+      success: false,
+      message: "no product available",
+    });
+  }
+};
+
+// get a single product
+const singleProduct = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const singleProduct = await productModel.findById(id);
+    if (!singleProduct) {
+      return res.status(404).json({
+        success: false,
+        message: "no product found",
+      });
+    } else {
+      res.json({
+        success: true,
+        message: "product found",
+        singleProduct,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.json({
+      success: false,
+      message: "no product available",
+    });
+  }
+};
+
+const newProduct = async (req, res) => {
+  try {
+    const products = await productModel
+      .find()
+      .sort({ createdAt: -1 })
+      .limit(10);
+    if (!products) {
+      res.json({
+        success: false,
+        message: "no new product available",
+      });
+    }
+    res.json({
+      success: true,
+      message: "newest product created",
+      products,
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({
+      success: false,
+      message: "no product available",
+    });
+  }
+};
+
+const popularProduct = async (req, res) => {
+  try {
+    const popularProducts = await productModel
+      .find()
+      .sort({ averageRating: -1 })
+      .limit(10);
+    if (!popularProducts) {
+      res.json({
+        success: false,
+        message: "rate a product",
+      });
+    }
+    res.json({
+      success: true,
+      message: "popular product created",
+      popularProducts,
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({
+      success: false,
+      message: "no product available",
+    });
+  }
+};
+
+const addWishList = async (req, res) => {
+  const { _id } = req.params;
+  const { prodId } = req.body;
+
+  try {
+    const user = await User.findById(_id);
+    const alreadyAdded = user.wishList.includes(prodId);
+
+    if (alreadyAdded) {
+      const updatedUser = await User.findByIdAndUpdate(
+        _id,
+        {
+          $pull: { wishList: prodId },
+        },
+        { new: true }
+      );
+      res.json({
+        success: true,
+        message: "product remove from wishlist",
+        updatedUser,
+      });
+    } else {
+      const updatedUser = await User.findByIdAndUpdate(
+        _id,
+        {
+          $push: { wishList: prodId },
+        },
+        { new: true }
+      );
+      res.json({
+        success: true,
+        message: "Product added to wishlist",
+        user: updatedUser,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const rating = async (req, res) => {
+  const { _id } = req.user;
+  const { star, prodId, comment } = req.body;
+  try {
+  
+    const product = await productModel.findById(prodId);
+    if (!product) {
+      res.json({
+        success: false,
+        message: "product not found",
+      });
+    }
+    const alreadyRated = product.rating.find(
+      (rating) => rating.postedBy.toString() === _id.toString()
+    );
+    if(alreadyRated){
+      const updateRating = await productModel.updateOne(
+        { _id: prodId, "rating.postedBy": _id },
+        { $set: { "rating.$.star": star, "rating.$.comment": comment } },
+        { new: true }
+      );
+    }else{
+      const updateRating = await productModel.findByIdAndUpdate(prodId, {
+        $push: {
+          rating: { star: star, comment: comment, postedBy: _id },
+        },
+      }, {new:true})
+    }
+  } catch (error) {
+    console.log(error);
+    res.json({
+      success: false,
+      message: "failed",
+    });
+  }
+  const updatedProduct = await productModel.findById(prodId);
+  const totalRatings = updatedProduct.rating.length;
+  const ratingSum = updatedProduct.rating
+    .map((item) => item.star)
+    .reduce((prev, curr) => prev + curr, 0);
+  const actualRating = Math.round(ratingSum / totalRatings);
+
+  const finalProduct = await productModel.findByIdAndUpdate(
+    prodId,
+    { totalRating: actualRating },
+    { new: true }
+  );
+  res.json(finalProduct);
+};
+
+export {
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  getAllProduct,
+  singleProduct,
+  newProduct,
+  popularProduct,
+  addWishList,
+  rating
+};
