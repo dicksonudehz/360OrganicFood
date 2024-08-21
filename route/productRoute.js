@@ -11,7 +11,7 @@ productRouter.get("/all", getAllProduct); 
 productRouter.get("/single/:id",authMiddleware, singleProduct); 
 productRouter.get("/new", newProduct); 
 productRouter.get("/popular", popularProduct); 
-productRouter.put("/wishlist/:_id", authMiddleware, addWishList); 
+productRouter.put("/wishlist/:id", authMiddleware, addWishList); 
 productRouter.put("/rating/", authMiddleware, rating); 
 
 export default productRouter

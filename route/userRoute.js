@@ -6,7 +6,7 @@ const userRouter = express.Router();
 
 userRouter.post("/register", registerUser);
 userRouter.post("/login", loginUser);
-userRouter.post("/adminLogin", loginAdmin);
+userRouter.post("/admin", loginAdmin);
 userRouter.get("/users",authMiddleware, isAdmin, allUser);
 userRouter.get("/users/:id", authMiddleware, isAdmin, getAUser);
 userRouter.delete("/users/:id", authMiddleware, isAdmin, deleteUser);
