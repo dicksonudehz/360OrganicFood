@@ -65,7 +65,7 @@ const getAllCartItem = async (req, res) => {
     let cartData = await userData.cartData;
     res.json({
       success: true,
-      message: "all items added to the cart",
+      message: "all items added in the cart",
       cartData,
     });
   } catch (error) {

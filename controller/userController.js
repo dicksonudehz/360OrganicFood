@@ -41,7 +41,7 @@ const loginUser = async (req, res) => {
   try {
     const findUser = await User.findOne({ email });
     if (!findUser) {
-      res.json({
+      res.status(400).json({
         success: false,
         message: "user does not exist",
       });
@@ -60,7 +60,7 @@ const loginUser = async (req, res) => {
         httpOnly: true,
         maxAge: 72 * 60 * 60 * 1000, // 3 days
       });
-      res.json({
+      res.status(200).json({
         success: true,
         message: "user details",
         // updateUser,
@@ -68,14 +68,14 @@ const loginUser = async (req, res) => {
         refreshToken
       });
     } else {
-      res.json({
+      res.status(400).json({
         success: false,
         message: "user email and password does not match",
     });
     }
   } catch (error) {
     console.log(error);
-    res.json({
+    res.status(400).json({
       success: false,
       message: "failed to login",
     });
@@ -248,14 +248,14 @@ const updatePassword = async (req, res) => {
   try {
     const user = await User.findById(id);
     if (!password) {
-      res.json({
+      res.status(400).json({
         success: false,
         message: "enter new password",
       });
     } else {
       user.password = password;
       const updatedPassword = await user.save();
-      res.json({
+      res.status(200).json({
         success: true,
         message: "password updated successfully",
         updatedPassword,
@@ -263,7 +263,7 @@ const updatePassword = async (req, res) => {
     }
   } catch (error) {
     console.log(error);
-    res.json({ success: true, message: "error" });
+    res.status(400).json({ success: true, message: "error" });
   }
 };
 
