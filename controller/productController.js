@@ -200,35 +200,34 @@ const popularProduct = async (req, res) => {
 };
 
 const addWishList = async (req, res) => {
-  const { _id } = req.params;
+  const { id } = req.params;
   const { prodId } = req.body;
 
   try {
-    const user = await User.findById(_id);
+    const user = await User.findById(id);
     const alreadyAdded = user.wishList.includes(prodId);
-
     if (alreadyAdded) {
       const updatedUser = await User.findByIdAndUpdate(
-        _id,
+        id,
         {
           $pull: { wishList: prodId },
         },
         { new: true }
       );
-      res.json({
+      res.status(400).json({
         success: true,
         message: "product remove from wishlist",
         updatedUser,
       });
     } else {
       const updatedUser = await User.findByIdAndUpdate(
-        _id,
+        id,
         {
           $push: { wishList: prodId },
         },
         { new: true }
       );
-      res.json({
+      res.status(200).json({
         success: true,
         message: "Product added to wishlist",
         user: updatedUser,
