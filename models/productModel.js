@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 // Declare the Schema of the Mongo model
-var productSchema = new mongoose.Schema(
+const productSchema = new mongoose.Schema(
   {
     title: {
       type: String,
@@ -35,10 +35,7 @@ var productSchema = new mongoose.Schema(
     },
 
     images:[],
-    // color: {
-    //   type: String,
-    //   enum: ["Black", "red", "Brown"],
-    // },
+  
     rating: [
       {
         star: Number,
@@ -61,6 +58,6 @@ productSchema.virtual('averageRating').get(function () {
   return sum / this.ratings.length;
 });
 
-const productModel = mongoose.model("product", productSchema);
+const productModel = mongoose.model("productModel", productSchema);
 
 export default productModel;

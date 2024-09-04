@@ -214,7 +214,7 @@ const addWishList = async (req, res) => {
         },
         { new: true }
       );
-      res.status(400).json({
+      res.status(200).json({
         success: true,
         message: "product remove from wishlist",
         updatedUser,
@@ -238,11 +238,36 @@ const addWishList = async (req, res) => {
   }
 };
 
+const getAllProductWishlist = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await User.findById(id).populate("wishList");
+    const wishlistProducts = user.wishList;
+    console.log(
+      "all the product user added to the wishlist are",
+      wishlistProducts
+    );
+    if (wishlistProducts) {
+      const wishListProducts = user.wishList;
+      res.status(200).json({
+        success: true,
+        message: "Product in the wishlist",
+        products: wishListProducts,
+      });
+    }
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "cannot fetch product in the wishlist of this uer",
+    });
+    console.log(error);
+  }
+};
+
 const rating = async (req, res) => {
   const { _id } = req.user;
   const { star, prodId, comment } = req.body;
   try {
-  
     const product = await productModel.findById(prodId);
     if (!product) {
       res.json({
@@ -253,18 +278,22 @@ const rating = async (req, res) => {
     const alreadyRated = product.rating.find(
       (rating) => rating.postedBy.toString() === _id.toString()
     );
-    if(alreadyRated){
+    if (alreadyRated) {
       const updateRating = await productModel.updateOne(
         { _id: prodId, "rating.postedBy": _id },
         { $set: { "rating.$.star": star, "rating.$.comment": comment } },
         { new: true }
       );
-    }else{
-      const updateRating = await productModel.findByIdAndUpdate(prodId, {
-        $push: {
-          rating: { star: star, comment: comment, postedBy: _id },
+    } else {
+      const updateRating = await productModel.findByIdAndUpdate(
+        prodId,
+        {
+          $push: {
+            rating: { star: star, comment: comment, postedBy: _id },
+          },
         },
-      }, {new:true})
+        { new: true }
+      );
     }
   } catch (error) {
     console.log(error);
@@ -297,5 +326,6 @@ export {
   newProduct,
   popularProduct,
   addWishList,
-  rating
+  rating,
+  getAllProductWishlist,
 };

@@ -14,16 +14,14 @@ const createOrder = async (req, res) => {
       address: req.body.address,
     });
     await newOrder.save();
-
     // Clear the user's cart items
     await User.findByIdAndUpdate(req.body.userId, { cartItems: [] });
-
     // Calculate the total amount in cents (USD) or kobo (NGN)
     const totalAmount =
       req.body.items.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
-      ) + 2; // Add delivery charge
+      ) + 2; 
 
     const amountInCents = totalAmount * 100;
 
@@ -134,5 +132,66 @@ const updateOrder = async (req, res) => {
   }
 };
 
+const orderByDistributor = async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const distributor = await User.findById(userId);
+    const allOrders = await orderModel.find({ userId: distributor._id });
+    if (allOrders) {
+      if (allOrders) {
+        res.status(200).json({
+          success: true,
+          message: "This distributor has following orders",
+          allOrders,
+        });
+      }
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Distributor has no order",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({
+      success: false,
+      message: "error",
+    });
+  }
+};
 
-export { verifyOrder, fetchAllOrder, createOrder, fetchSingleOrder,updateOrder };
+const fulfilOrders = async(req, res)=>{
+  try {
+    const fulfilOrders = await orderModel.find({payment:"true"})
+    console.log("fulfilOrders",fulfilOrders)
+    if(fulfilOrders){
+      res.status(200).json({
+        success: true,
+        message: "all fulfil orders available",
+        fulfilOrders,
+      });
+    }
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "error",
+    });
+  }
+}
+
+const orderReqByDistributor = async(req, res) => {
+  const {userId} = req.body
+  const distributor = await User.findById(userId);
+  const allOrders = await orderModel.find({ userId: distributor._id });
+}
+
+
+export {
+  verifyOrder,
+  fetchAllOrder,
+  createOrder,
+  fetchSingleOrder,
+  updateOrder,
+  orderByDistributor,
+  fulfilOrders
+};

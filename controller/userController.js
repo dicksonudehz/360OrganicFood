@@ -14,26 +14,194 @@ const registerUser = async (req, res) => {
       role: req.body.role,
       address: req.body.address,
     });
-    if (user) {
-      await user.save();
-      res.json({
+    const registerUser = await user.save();
+    if (registerUser) {
+      res.status(200).json({
         success: true,
         message: "user registration successful",
         user,
       });
-    } else {
-      res.json({
+    } 
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({
+      success: false,
+      message: "failed",
+    });
+  }
+ 
+};
+
+const createDistributor = async (req, res) => {
+  try {
+    const user = new User({
+      firstname: req.body.firstname,
+      lastname: req.body.lastname,
+      email: req.body.email,
+      mobile: req.body.mobile,
+      password: req.body.password,
+      role: req.body.role,
+      address: req.body.address,
+    });
+    const userDistributor = user.role;
+    if (userDistributor !== "Distributor") {
+      res.status(400).json({
         success: false,
-        message: "cannot register a user",
+        message: "user must be a distributor",
       });
+    }
+    if (user && userDistributor) {
+      user.role = "Distributor";
+      await user.save();
+      res.status(200).json({
+        success: true,
+        message: "you have register as a distributor",
+        user,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "user must be a distributor",
+      });
+      rerturn;
     }
   } catch (error) {
     console.log(error);
   }
-  res.json({
+  res.status(400).json({
     success: false,
     message: "failed",
   });
+};
+
+const fetchAlldistributor = async (req, res) => {
+  try {
+    const distributors = await User.find({ role: "Distributor" });
+    if (distributors) {
+      res.status(200).json({
+        success: true,
+        message: "All available distributors",
+        distributors,
+      });
+    } else {
+      res.status(400).json({
+        success: true,
+        message: "no distributor available",
+        distributors,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({
+      success: true,
+      message: "error",
+    });
+  }
+};
+
+const getSingleDistributor = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(400).json({
+        success: true,
+        message: "user does not exist",
+      });
+    }
+    const distributor = user.role;
+    if (distributor === "Distributor") {
+      res.status(200).json({
+        success: true,
+        message: "Distributor with the above email address",
+        user,
+      });
+    }
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "error",
+    });
+  }
+};
+
+const blockDistributor = async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const blockDistributor = await User.findById(userId);
+    if (!blockDistributor) {
+      res.status(400).json({
+        success: false,
+        message: "distributor does not exist",
+      });
+    } else {
+      blockDistributor.isBlocked = "true";
+    }
+    res.status(200).json({
+      success: true,
+      message: "this distributor is block",
+      blockDistributor,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "error",
+    });
+  }
+};
+
+const deleteDistributor = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const distributor = await User.findById(id);
+    if (!distributor) {
+      res.status(400).json({
+        success: false,
+        message: "distributor does not exist",
+      });
+    }
+    if (distributor.role === "Distributor") {
+      const deletedDistributor = await User.findByIdAndDelete(id);
+      console.log("deleteDistributor", deleteDistributor);
+      res.status(200).json({
+        success: true,
+        message: "distributor deleted successfully",
+        deletedDistributor,
+      });
+    } else if (distributor.role !== "Distributor") {
+      res.status(400).json({
+        success: false,
+        message: "user is not a distributor",
+        distributor,
+      });
+    }
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "error occur when deleting distributor",
+    });
+  }
+};
+
+const distributorByLocation = async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const distributor = await User.findById(userId);
+    if (distributor) {
+      const distributorLocation = distributor.address;
+      res.status(200).json({
+        success: true,
+        message: "distributor address",
+        distributorLocation,
+      });
+    }
+    console.log(distributor.address);
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "error",
+    });
+  }
 };
 
 const loginUser = async (req, res) => {
@@ -65,13 +233,13 @@ const loginUser = async (req, res) => {
         message: "user details",
         // updateUser,
         findUser,
-        refreshToken
+        refreshToken,
       });
     } else {
       res.status(400).json({
         success: false,
         message: "user email and password does not match",
-    });
+      });
     }
   } catch (error) {
     console.log(error);
@@ -86,16 +254,16 @@ const loginAdmin = async (req, res) => {
   const { email, password } = req.body;
   try {
     const findUser = await User.findOne({ email });
-    const adminLogin = findUser.role === "isAdmin";
-    if (!adminLogin)
-      [
-        res.json({
-          success: false,
-          message: "user not authorize",
-        }),
-      ];
+    const adminLogin = findUser.role === "admin";
+    if (!adminLogin) {
+      res.status(400).json({
+        success: false,
+        message: "user not authorize, you are not an admnin",
+      });
+    }
+
     if (adminLogin && (await findUser.isPasswordMatched(password))) {
-      const refreshToken = await generateTokens(findUser._id);
+      const refreshToken = generateTokens(findUser._id);
       const updateUser = await User.findByIdAndUpdate(
         findUser._id,
         { refreshToken },
@@ -107,20 +275,20 @@ const loginAdmin = async (req, res) => {
         httpOnly: true,
         maxAge: 72 * 60 * 60 * 1000, // 3 days
       });
-      res.json({
+      res.status(400).json({
         success: true,
         message: "admin user details",
         updateUser,
       });
     } else {
-      res.json({
+      res.status(400).json({
         success: false,
         message: "user email and password does not match",
       });
     }
   } catch (error) {
     console.log(error);
-    res.json({
+    res.status(400).json({
       success: false,
       message: "failed",
     });
@@ -276,5 +444,11 @@ export {
   deleteUser,
   forgetPassword,
   resetPassword,
-  updatePassword
+  updatePassword,
+  createDistributor,
+  fetchAlldistributor,
+  getSingleDistributor,
+  blockDistributor,
+  deleteDistributor,
+  distributorByLocation,
 };
