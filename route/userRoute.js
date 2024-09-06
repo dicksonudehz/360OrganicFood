@@ -1,5 +1,5 @@
 import express from 'express'
-import {allUser, blockDistributor, createDistributor, deleteDistributor, deleteUser, distributorByLocation, fetchAlldistributor, forgetPassword, getAUser, getSingleDistributor, loginAdmin, loginUser, registerUser, resetPassword, updatePassword } from '../controller/userController.js';
+import {allDistributorByLocation, allUser, blockDistributor, createDistributor, deleteDistributor, deleteUser, distributorMostSaleProduct, fetchAlldistributor, filterProdPuchaseByDate, forgetPassword, getAUser, getSingleDistributor, loginAdmin, loginUser, registerUser, resetPassword, updatePassword } from '../controller/userController.js';
 import { authMiddleware, isAdmin } from '../middleware/authMiddleware.js';
 
 const userRouter = express.Router();
@@ -10,7 +10,9 @@ userRouter.get("/distributor", authMiddleware, isAdmin, fetchAlldistributor);
 userRouter.get("/singleDistributor", authMiddleware, isAdmin, getSingleDistributor);
 userRouter.post("/blockDistributor", authMiddleware, isAdmin, blockDistributor);
 userRouter.delete("/deleteDistributor/:id", authMiddleware,isAdmin, deleteDistributor);
-userRouter.get("/distributorLocation/", authMiddleware,isAdmin, distributorByLocation);
+userRouter.get("/prodByDist/:id", authMiddleware,isAdmin, distributorMostSaleProduct);
+userRouter.get("/filterProdByD/:id", authMiddleware,isAdmin, filterProdPuchaseByDate);
+userRouter.get("/distributorLocation/", authMiddleware,isAdmin, allDistributorByLocation);
 userRouter.post("/login", loginUser);
 userRouter.post("/admin", loginAdmin);
 userRouter.get("/users",authMiddleware, isAdmin, allUser);

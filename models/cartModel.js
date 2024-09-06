@@ -1,16 +1,15 @@
 import mongoose from "mongoose";
 
-// Declare the Schema of the Mongo model
 var cartSchema = new mongoose.Schema({
   products: [
     {
-      product: {
+      productId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "productModel",
       },
       count: Number,
       price: Number,
-    }, 
+    },
   ],
   cartTotal: Number,
   totalAfterDiscount: Number,
@@ -25,7 +24,6 @@ var cartSchema = new mongoose.Schema({
   },
 });
 
-//Export the model
 const Cart = mongoose.model("Cart", cartSchema);
 
 export default Cart;

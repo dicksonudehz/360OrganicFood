@@ -4,7 +4,7 @@ import { addToCart, getAllCartItem, removeCart } from '../controller/cartControl
 
 const cartRouter = express.Router();
 
-cartRouter.post("/addToCart",authMiddleware, addToCart);
+cartRouter.post("/addToCart", addToCart);
 cartRouter.post("/remove",authMiddleware, removeCart);
 cartRouter.get("/allCartItems",authMiddleware, getAllCartItem);
 

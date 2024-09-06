@@ -141,7 +141,7 @@ const orderByDistributor = async (req, res) => {
       if (allOrders) {
         res.status(200).json({
           success: true,
-          message: "This distributor has following orders",
+          message: "This distributor has made following orders",
           allOrders,
         });
       }
@@ -177,12 +177,6 @@ const fulfilOrders = async(req, res)=>{
       message: "error",
     });
   }
-}
-
-const orderReqByDistributor = async(req, res) => {
-  const {userId} = req.body
-  const distributor = await User.findById(userId);
-  const allOrders = await orderModel.find({ userId: distributor._id });
 }
 
 

@@ -5,9 +5,9 @@ import User from "../models/userModel.js";
 
 const createProduct = async (req, res) => {
   try {
-    const { title, description, price, category, brand, quantity, images } =
+    const { userId,title, description, price, category, brand, quantity, images } =
       req.body;
-    if (
+    if (!userId||
       !title ||
       !description ||
       !price ||
@@ -23,6 +23,7 @@ const createProduct = async (req, res) => {
     }
     // Create new product instance
     const product = new productModel({
+      userId,
       title,
       description,
       price,

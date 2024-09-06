@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 // Declare the Schema of the Mongo model
 const productSchema = new mongoose.Schema(
   {
+    userId: { type: String, required: true },
     title: {
       type: String,
       required: true,
@@ -33,6 +34,7 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    date: {type: Date, default: Date.now},
 
     images:[],
   

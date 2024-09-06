@@ -1,4 +1,5 @@
 import { generateTokens } from "../config/jwtTokens.js";
+import productModel from "../models/productModel.js";
 import User from "../models/userModel.js";
 import { sendMail } from "./emailController.js";
 import crypto from "crypto";
@@ -21,7 +22,7 @@ const registerUser = async (req, res) => {
         message: "user registration successful",
         user,
       });
-    } 
+    }
   } catch (error) {
     console.log(error);
     res.status(400).json({
@@ -29,7 +30,6 @@ const registerUser = async (req, res) => {
       message: "failed",
     });
   }
- 
 };
 
 const createDistributor = async (req, res) => {
@@ -183,23 +183,105 @@ const deleteDistributor = async (req, res) => {
   }
 };
 
-const distributorByLocation = async (req, res) => {
-  const { userId } = req.body;
+const allDistributorByLocation = async (req, res) => {
   try {
-    const distributor = await User.findById(userId);
-    if (distributor) {
-      const distributorLocation = distributor.address;
+    const allDistributors = await User.find({ role: "Distributor" });
+    if (allDistributors) {
+      const allDistAddress = allDistributors.map(
+        (distributor) => distributor.address
+      );
       res.status(200).json({
         success: true,
-        message: "distributor address",
-        distributorLocation,
+        message: "distributor's address",
+        allDistAddress,
       });
     }
-    console.log(distributor.address);
   } catch (error) {
     res.status(400).json({
       success: false,
       message: "error",
+    });
+  }
+};
+
+const distributorMostSaleProduct = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(400).json({
+        success: false,
+        message: "user does not exist",
+      });
+    }
+    const distributor = user.role;
+    if (distributor === "Distributor") {
+      const allProduct = await productModel.find({ userId: user._id });
+
+      if (allProduct.length > 0) {
+        const prodBoughtMost = allProduct.reduce((maxProd, currProd) =>
+          currProd.quantity > maxProd.quantity ? currProd : maxProd
+        );
+        console.log("prodBoughtMost", prodBoughtMost);
+        res.status(200).json({
+          success: true,
+          message: "Product bought most by this distributor",
+          prodBoughtMost,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: "This distributor have not bought any product",
+        });
+      }
+    }
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "failed",
+    });
+  }
+};
+
+const filterProdPuchaseByDate = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(400).json({
+        success: false,
+        message: "user does not exist",
+      });
+    }
+    const distributor = user.role;
+    if (distributor === "admin") {
+      const allProduct = await productModel.find({ userId: user._id });
+      if (allProduct.length > 0) {
+        const sortProductByDate = allProduct.sort(
+          (firstProd, secondProd) =>
+            new Date(secondProd.date) - new Date(firstProd.date)
+        );
+        res.status(200).json({
+          success: true,
+          message: "All Product purchase by date",
+          sortProductByDate,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: "This distributor have not bought any product",
+        });
+      }
+    }else{
+      res.status(400).json({
+        success: false,
+        message: "User is not a distributor",
+      });
+    }
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "Error",
     });
   }
 };
@@ -450,5 +532,7 @@ export {
   getSingleDistributor,
   blockDistributor,
   deleteDistributor,
-  distributorByLocation,
+  allDistributorByLocation,
+  distributorMostSaleProduct,
+  filterProdPuchaseByDate
 };
