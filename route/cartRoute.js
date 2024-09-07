@@ -6,7 +6,7 @@ const cartRouter = express.Router();
 
 cartRouter.post("/addToCart", addToCart);
 cartRouter.post("/remove", removeCart);
-cartRouter.get("/allCartItems",authMiddleware, isAdmin, getAllCartItem);
+cartRouter.get("/allCartItems",authMiddleware, getAllCartItem);
 
 
 

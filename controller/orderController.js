@@ -133,7 +133,7 @@ const updateOrder = async (req, res) => {
 };
 
 const orderByDistributor = async (req, res) => {
-  const { userId } = req.body;
+  const { userId } = req.params;
   try {
     const distributor = await User.findById(userId);
     const allOrders = await orderModel.find({ userId: distributor._id });
