@@ -5,9 +5,18 @@ import User from "../models/userModel.js";
 
 const createProduct = async (req, res) => {
   try {
-    const { userId,title, description, price, category, brand, quantity, images } =
-      req.body;
-    if (!userId||
+    const {
+      userId,
+      title,
+      description,
+      price,
+      category,
+      brand,
+      quantity,
+      images,
+    } = req.body;
+    if (
+      !userId ||
       !title ||
       !description ||
       !price ||
@@ -242,18 +251,25 @@ const addWishList = async (req, res) => {
 const getAllProductWishlist = async (req, res) => {
   const { id } = req.params;
   try {
-    const user = await User.findById(id).populate("wishList");
-    const wishlistProducts = user.wishList;
-    console.log(
-      "all the product user added to the wishlist are",
-      wishlistProducts
-    );
-    if (wishlistProducts) {
-      const wishListProducts = user.wishList;
-      res.status(200).json({
+    const user = await User.findById(id)
+    console.log("user", user);
+    if (!user) {
+      res.status(400).json({
         success: true,
-        message: "Product in the wishlist",
-        products: wishListProducts,
+        message: "user does not exist",
+      });
+    }
+    
+    if (user.wishList && user.wishList.length > 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Products in the wishList",
+        products: user.wishList,
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "No products in the wishlist",
       });
     }
   } catch (error) {

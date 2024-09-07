@@ -10,7 +10,7 @@ userRouter.get("/distributor", authMiddleware, isAdmin, fetchAlldistributor);
 userRouter.get("/singleDistributor", authMiddleware, isAdmin, getSingleDistributor);
 userRouter.post("/blockDistributor", authMiddleware, isAdmin, blockDistributor);
 userRouter.delete("/deleteDistributor/:id", authMiddleware,isAdmin, deleteDistributor);
-userRouter.get("/prodByDist/:id", authMiddleware,isAdmin, distributorMostSaleProduct);
+userRouter.get("/prodByDist/:id", authMiddleware, distributorMostSaleProduct);
 userRouter.get("/filterProdByD/:id", authMiddleware,isAdmin, filterProdPuchaseByDate);
 userRouter.get("/distributorLocation/", authMiddleware,isAdmin, allDistributorByLocation);
 userRouter.post("/login", loginUser);

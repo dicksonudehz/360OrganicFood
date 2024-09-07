@@ -5,8 +5,8 @@ import { addToCart, getAllCartItem, removeCart } from '../controller/cartControl
 const cartRouter = express.Router();
 
 cartRouter.post("/addToCart", addToCart);
-cartRouter.post("/remove",authMiddleware, removeCart);
-cartRouter.get("/allCartItems",authMiddleware, getAllCartItem);
+cartRouter.post("/remove", removeCart);
+cartRouter.get("/allCartItems",authMiddleware, isAdmin, getAllCartItem);
 
 
 

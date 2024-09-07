@@ -1,4 +1,5 @@
 import { generateTokens } from "../config/jwtTokens.js";
+import Cart from "../models/cartModel.js";
 import productModel from "../models/productModel.js";
 import User from "../models/userModel.js";
 import { sendMail } from "./emailController.js";
@@ -216,24 +217,25 @@ const distributorMostSaleProduct = async (req, res) => {
     }
     const distributor = user.role;
     if (distributor === "Distributor") {
-      const allProduct = await productModel.find({ userId: user._id });
-
-      if (allProduct.length > 0) {
-        const prodBoughtMost = allProduct.reduce((maxProd, currProd) =>
-          currProd.quantity > maxProd.quantity ? currProd : maxProd
-        );
-        console.log("prodBoughtMost", prodBoughtMost);
+      const userOrdersCart = await Cart.find({ orderBy: id });
+      const allProduct = userOrdersCart.flatMap((cart) => cart.products);
+      if (!allProduct) {
         res.status(200).json({
           success: true,
-          message: "Product bought most by this distributor",
-          prodBoughtMost,
-        });
-      } else {
-        res.status(400).json({
-          success: false,
-          message: "This distributor have not bought any product",
+          message: "no product is added to the cart",
         });
       }
+
+      const maxCount = Math.max(...allProduct.map(product => product.count));
+
+      const productsWithMaxCount = allProduct.filter(product => product.count === maxCount);
+
+      res.status(200).json({
+        success: true,
+        message: "this are the product with the higher buying power",
+        productsWithMaxCount
+      });
+
     }
   } catch (error) {
     res.status(400).json({
@@ -254,17 +256,21 @@ const filterProdPuchaseByDate = async (req, res) => {
       });
     }
     const distributor = user.role;
-    if (distributor === "admin") {
-      const allProduct = await productModel.find({ userId: user._id });
+    if (distributor === "Distributor") {
+      const userOrdersCart = await Cart.find({ orderBy: id });
+      const allProduct = userOrdersCart.flatMap((cart) => cart.products);
       if (allProduct.length > 0) {
         const sortProductByDate = allProduct.sort(
           (firstProd, secondProd) =>
             new Date(secondProd.date) - new Date(firstProd.date)
         );
+        const dateOfPurchase = sortProductByDate.date;
+        console.log("dateOfPurchase", dateOfPurchase);
         res.status(200).json({
           success: true,
           message: "All Product purchase by date",
           sortProductByDate,
+          dateOfPurchase,
         });
       } else {
         res.status(400).json({
@@ -272,7 +278,7 @@ const filterProdPuchaseByDate = async (req, res) => {
           message: "This distributor have not bought any product",
         });
       }
-    }else{
+    } else {
       res.status(400).json({
         success: false,
         message: "User is not a distributor",
@@ -534,5 +540,5 @@ export {
   deleteDistributor,
   allDistributorByLocation,
   distributorMostSaleProduct,
-  filterProdPuchaseByDate
+  filterProdPuchaseByDate,
 };

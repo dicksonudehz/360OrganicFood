@@ -39,9 +39,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-   
-   
-    cartData: { type: Object, default: {} },
+    // cartData: { type: Object, default: {} },
     wishList: [{ type: mongoose.Schema.Types.ObjectId, ref: "productModel" }],
     refreshToken: {
       type: String,
