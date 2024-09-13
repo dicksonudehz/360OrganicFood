@@ -116,7 +116,8 @@ const removeCart = async (req, res) => {
 
 const getAllCartItem = async (req, res) => {
   try {
-    const userOrdersCart = await Cart.find({});
+    const userOrdersCart = await Cart.find({}).populate("products.productId");
+    console.log("userOrdersCart", userOrdersCart);
     if (!userOrdersCart) {
       res.json({
         success: true,
