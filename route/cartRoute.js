@@ -8,6 +8,4 @@ cartRouter.post("/addToCart", addToCart);
 cartRouter.post("/remove", removeCart);
 cartRouter.get("/allCartItems",authMiddleware, getAllCartItem);
 
-
-
 export default cartRouter

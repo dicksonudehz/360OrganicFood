@@ -55,9 +55,9 @@ const productSchema = new mongoose.Schema(
 );
 
 productSchema.virtual('averageRating').get(function () {
-  if (this.ratings.length === 0) return 0;
-  const sum = this.ratings.reduce((total, rating) => total + rating.rating, 0);
-  return sum / this.ratings.length;
+  if (this.rating.length === 0) return 0;
+  const sum = this.rating.reduce((total, rating) => total + rating.rating, 0);
+  return sum / this.rating.length;
 });
 
 const productModel = mongoose.model("productModel", productSchema);

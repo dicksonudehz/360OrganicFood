@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     lastname: {
-      type: String,  
+      type: String,
       required: true,
     },
     email: {
@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
     address: {
-      type: String
+      type: String,
     },
     // orders:[],
     isBlocked: {
@@ -40,7 +40,23 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     // cartData: { type: Object, default: {} },
-    wishList: [{ type: mongoose.Schema.Types.ObjectId, ref: "productModel" }],
+    // wishList: [{ type: mongoose.Schema.Types.ObjectId, ref: "productModel" }],
+    wishList: [
+      {
+        productId: mongoose.Schema.Types.ObjectId,
+        title: String,
+        price: Number,
+        description: String,
+        category: String,
+        brand: String,
+        quantity: Number,
+        sold: Number,
+        images: [],
+        rating: [],
+        totalRating: String,
+      },
+    ],
+
     refreshToken: {
       type: String,
     },

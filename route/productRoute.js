@@ -14,7 +14,6 @@ import {
 import { authMiddleware, isAdmin } from "../middleware/authMiddleware.js";
 
 const productRouter = express.Router();
-
 productRouter.post("/create", authMiddleware, isAdmin, createProduct);
 productRouter.put("/update/:id", authMiddleware, isAdmin, updateProduct);
 productRouter.delete("/delete/:id", authMiddleware, isAdmin, deleteProduct);
@@ -23,7 +22,7 @@ productRouter.get("/single/:id", authMiddleware, singleProduct);
 productRouter.get("/new", newProduct);
 productRouter.get("/popular", popularProduct);
 productRouter.get("/allwishlist/:id", authMiddleware, getAllProductWishlist);
-productRouter.put("/wishlist/:id", authMiddleware, addWishList);
+productRouter.post("/wishlist/", authMiddleware, addWishList);
 productRouter.put("/rating/", authMiddleware, rating);
 
 export default productRouter;

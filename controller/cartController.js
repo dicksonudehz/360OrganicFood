@@ -15,9 +15,11 @@ const addToCart = async (req, res) => {
     let cart = await Cart.findOne({ orderBy: userId });
     if (!cart) {
       cart = new Cart({
-        orderBy: userId,
         products: [],
         cartTotal: 0,
+        totalAfterDiscount,
+        orderStatus,
+        orderBy: userId,
       });
     }
     const productIndex = cart.products.findIndex(
@@ -37,12 +39,11 @@ const addToCart = async (req, res) => {
       0
     );
     await cart.save();
-    const productCart = cart.products;
+    await cart.populate("products.productId");
     return res.status(200).json({
       success: true,
       message: "Product added to the cart successfully",
       cart,
-      productCart
     });
   } catch (error) {
     console.log(error);
@@ -64,7 +65,6 @@ const removeCart = async (req, res) => {
         message: "Product not found",
       });
     }
-
     let cart = await Cart.findOne({ orderBy: userId });
     if (!cart) {
       return res.status(404).json({
@@ -92,6 +92,7 @@ const removeCart = async (req, res) => {
       );
 
       await cart.save();
+      await cart.populate("products.productId");
 
       return res.status(200).json({
         success: true,
@@ -116,7 +117,7 @@ const removeCart = async (req, res) => {
 const getAllCartItem = async (req, res) => {
   try {
     const userOrdersCart = await Cart.find({});
-    if(!userOrdersCart){
+    if (!userOrdersCart) {
       res.json({
         success: true,
         message: "No product is available in cart",
