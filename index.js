@@ -15,9 +15,9 @@ const app = express();
 const port = 8000;
 
 // middleware
+app.use(cors());
 app.use(express.json());
 // app.use(cors());
-app.use(cors());
 app.use(bodyParser.json());
 
 // end point

@@ -10,7 +10,7 @@ var cartSchema = new mongoose.Schema(
         },
         count: Number,
         price: Number,
-        date: { type: Date, default: Date.now },
+        // date: { type: Date, default: Date.now },
       },
     ],
     cartTotal: Number,
