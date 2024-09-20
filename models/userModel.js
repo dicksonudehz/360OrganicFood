@@ -40,6 +40,7 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     // cartData: { type: Object, default: {} },
+    cart: [{ type: mongoose.Schema.Types.ObjectId, ref: "cartModel" }],
     // wishList: [{ type: mongoose.Schema.Types.ObjectId, ref: "productModel" }],
     wishList: [
       {

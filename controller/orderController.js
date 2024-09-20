@@ -1,29 +1,54 @@
+import Cart from "../models/cartModel.js";
 import orderModel from "../models/orderModel.js";
 import User from "../models/userModel.js";
 import axios from "axios";
 
 const createOrder = async (req, res) => {
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+  const { userId } = req.body;
 
   try {
     // Create a new order in the database
-    const newOrder = new orderModel({
-      userId: req.body.userId,
-      items: req.body.items,
-      amount: req.body.amount,
-      address: req.body.address,
-    });
-    await newOrder.save();
-    // Clear the user's cart items
-    await User.findByIdAndUpdate(req.body.userId, { cartItems: [] });
-    // Calculate the total amount in cents (USD) or kobo (NGN)
-    const totalAmount =
-      req.body.items.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      ) + 2; 
+    // const newOrder = new orderModel({
+    //   userId: req.body.userId,
+    //   products: req.body.products,
+    //   amount: req.body.amount,
+    //   address: req.body.address,
+    // });
+    // await newOrder.save();
+    const cart = await Cart.findOne({ orderBy: userId }).populate(
+      "products.productId"
+    );
 
-    const amountInCents = totalAmount * 100;
+    if (!cart) {
+      return res.status(400).json({ success: false, message: "Cart is empty" });
+    }
+
+    // Create an order using cart details
+    const newOrder = new orderModel({
+      user: userId,
+      products: cart.products.map((item) => ({
+        product: item.productId,
+        count: item.count,
+        price: item.price,
+      })),
+      orderTotal: cart.cartTotal,
+    });
+    // Clear the user's cart products
+    await User.findByIdAndUpdate(req.body.userId, { products: [] });
+    // Calculate the total amount in cents (USD) or kobo (NGN)
+
+    const totalAmount = cart.products.reduce(
+      (sum, product) => sum + product.price * product.count,
+      0
+    );
+    console.log("totalAmount", totalAmount);
+    // const totalAmount =
+    // cart.products.reduce(
+    //   (sum, product) => sum + product.price * product.count,
+    //   0
+    // ) + 2;
+    // const amountInCents = totalAmount * 100;
 
     const user = await User.findById(req.body.userId);
     const email = user.email;
@@ -33,7 +58,7 @@ const createOrder = async (req, res) => {
       "https://api.paystack.co/transaction/initialize",
       {
         email: email,
-        amount: amountInCents,
+        amount: totalAmount,
         metadata: {
           orderId: newOrder._id,
           custom_fields: [
@@ -160,11 +185,11 @@ const orderByDistributor = async (req, res) => {
   }
 };
 
-const fulfilOrders = async(req, res)=>{
+const fulfilOrders = async (req, res) => {
   try {
-    const fulfilOrders = await orderModel.find({payment:"true"})
-    console.log("fulfilOrders",fulfilOrders)
-    if(fulfilOrders){
+    const fulfilOrders = await orderModel.find({ payment: "true" });
+    console.log("fulfilOrders", fulfilOrders);
+    if (fulfilOrders) {
       res.status(200).json({
         success: true,
         message: "all fulfil orders available",
@@ -177,8 +202,7 @@ const fulfilOrders = async(req, res)=>{
       message: "error",
     });
   }
-}
-
+};
 
 export {
   verifyOrder,
@@ -187,5 +211,5 @@ export {
   fetchSingleOrder,
   updateOrder,
   orderByDistributor,
-  fulfilOrders
+  fulfilOrders,
 };
