@@ -1,11 +1,11 @@
 import express from 'express'
-import {allDistributorByLocation, allUser, blockDistributor, createDistributor, deleteDistributor, deleteUser, distributorMostSaleProduct, fetchAlldistributor, filterProdPuchaseByDate, forgetPassword, getAUser, getSingleDistributor, loginAdmin, loginUser, registerUser, resetPassword, updatePassword } from '../controller/userController.js';
+import {allDistributorByLocation, allUser, blockDistributor, createDistributor, deleteDistributor, deleteUser, distributorMostSaleProduct, fetchAlldistributor, filterProdPuchaseByDate, forgetPassword, getAUser, getSingleDistributor, loginAdmin, loginUser, registerUser, resetPassword, updatedRole, updatePassword } from '../controller/userController.js';
 import { authMiddleware, isAdmin } from '../middleware/authMiddleware.js';
 
 const userRouter = express.Router();
 
 userRouter.post("/register", registerUser);
-userRouter.post("/disRegister", createDistributor);
+userRouter.post("/disRegister", isAdmin, createDistributor);
 userRouter.get("/distributor", authMiddleware, isAdmin, fetchAlldistributor);
 userRouter.get("/singleDistributor", authMiddleware, isAdmin, getSingleDistributor);
 userRouter.post("/blockDistributor", authMiddleware, isAdmin, blockDistributor);
@@ -19,7 +19,8 @@ userRouter.get("/users",authMiddleware, isAdmin, allUser);
 userRouter.get("/users/:id", authMiddleware, isAdmin, getAUser);
 userRouter.delete("/users/:id", authMiddleware, isAdmin, deleteUser);
 userRouter.post("/users/forget_password", forgetPassword);
-userRouter.post("/users/reset_password", resetPassword);
+userRouter.post("/users/reset_password/:token", resetPassword);
 userRouter.post("/users/update/:id", authMiddleware, isAdmin, updatePassword);
+userRouter.put("/users/role/", authMiddleware, isAdmin, updatedRole);
 
 export default userRouter

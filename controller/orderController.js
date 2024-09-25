@@ -5,60 +5,86 @@ import axios from "axios";
 
 const createOrder = async (req, res) => {
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-  const { userId } = req.body;
+
+  const { userId, address } = req.body;
 
   try {
-    // Create a new order in the database
-    // const newOrder = new orderModel({
-    //   userId: req.body.userId,
-    //   products: req.body.products,
-    //   amount: req.body.amount,
-    //   address: req.body.address,
-    // });
-    // await newOrder.save();
+    // Fetch cart and check if cart exists for the user
     const cart = await Cart.findOne({ orderBy: userId }).populate(
       "products.productId"
     );
-
-    if (!cart) {
+    if (!cart || cart.products.length === 0) {
       return res.status(400).json({ success: false, message: "Cart is empty" });
     }
+    // Fetch distributors and check if any distributor is available
+    const distributors = await User.find({ role: "Distributor" });
+    if (distributors.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No distributor available" });
+    }
 
-    // Create an order using cart details
-    const newOrder = new orderModel({
-      user: userId,
-      products: cart.products.map((item) => ({
-        product: item.productId,
-        count: item.count,
-        price: item.price,
-      })),
-      orderTotal: cart.cartTotal,
-    });
-    // Clear the user's cart products
-    await User.findByIdAndUpdate(req.body.userId, { products: [] });
-    // Calculate the total amount in cents (USD) or kobo (NGN)
+    // Prepare distributors array for the order
+    const distributorData = distributors.map((distributor) => ({
+      distributorId: distributor._id,
+      firstname: distributor.firstname,
+      lastname: distributor.lastname,
+      email: distributor.email,
+      mobile: distributor.mobile,
+      role: distributor.role,
+      address: distributor.address,
+      isBlocked: distributor.isBlocked,
+    }));
 
+    // Product ordered by the user from cart
+    const productOrdered = cart.products.map((item) => ({
+      productId: item.productId,
+      count: item.count,
+      price: item.price,
+      title: item.title,
+      description: item.description,
+      category: item.category,
+      brand: item.brand,
+      quantity: item.quantity,
+      images: item.images,
+      rating: item.rating,
+      totalRating: item.totalRating,
+    }));
+    // Calculate total amount
     const totalAmount = cart.products.reduce(
       (sum, product) => sum + product.price * product.count,
       0
     );
-    console.log("totalAmount", totalAmount);
-    // const totalAmount =
-    // cart.products.reduce(
-    //   (sum, product) => sum + product.price * product.count,
-    //   0
-    // ) + 2;
-    // const amountInCents = totalAmount * 100;
+    // Create a new order
+    const newOrder = new orderModel({
+      userId,
+      products: productOrdered,
+      orderTotal: totalAmount,
+      orderStatus: "Processing",
+      address: address,
+      payment: true,
+      Distributor: distributorData,
+    });
 
-    const user = await User.findById(req.body.userId);
+    // Save the new order
+    await newOrder.save();
+
+    // Clear the user's cart after placing the order
+    await Cart.findOneAndUpdate(
+      { orderBy: userId },
+      { $set: { products: [] } }
+    );
+
+    // Fetch user email for payment
+    const user = await User.findById(userId);
     const email = user.email;
 
     // Initialize payment with Paystack
     const response = await axios.post(
       "https://api.paystack.co/transaction/initialize",
       {
-        email: email,
-        amount: totalAmount,
+        email,
+        amount: totalAmount * 100, // Convert to cents/kobo
         metadata: {
           orderId: newOrder._id,
           custom_fields: [
@@ -78,14 +104,14 @@ const createOrder = async (req, res) => {
       }
     );
 
-    // Respond with the authorization URL from Paystack
+    // Respond with the Paystack authorization URL
     res.json({
       success: true,
       message: "Payment initialized successfully",
       authorization_url: response.data.data.authorization_url,
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).json({
       success: false,
       message: "Payment initialization failed",
@@ -204,6 +230,40 @@ const fulfilOrders = async (req, res) => {
   }
 };
 
+const allOrdersByLocDist = async (req, res) => {
+  const { address } = req.body;
+  try {
+    // console.log(userId);
+    const allOrders = await orderModel.find({});
+
+    const filteredDistributors = allOrders.map((order) => {
+      return order.Distributor.filter((dist) => dist.address === address);
+    });
+
+    const result = filteredDistributors.flat();
+    if (result.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "no distributor with the above address",
+      });
+    }
+    console.log("filteredDistributors", filteredDistributors);
+
+    if (filteredDistributors) {
+      res.status(200).json({
+        success: true,
+        message: "all orders by this users according to the location entered",
+        filteredDistributors,
+      });
+    }
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "error",
+    });
+  }
+};
+
 export {
   verifyOrder,
   fetchAllOrder,
@@ -212,4 +272,5 @@ export {
   updateOrder,
   orderByDistributor,
   fulfilOrders,
+  allOrdersByLocDist,
 };

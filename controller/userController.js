@@ -4,6 +4,7 @@ import productModel from "../models/productModel.js";
 import User from "../models/userModel.js";
 import { sendMail } from "./emailController.js";
 import crypto from "crypto";
+import bcryptjs from "bcryptjs";
 
 const registerUser = async (req, res) => {
   try {
@@ -226,16 +227,17 @@ const distributorMostSaleProduct = async (req, res) => {
         });
       }
 
-      const maxCount = Math.max(...allProduct.map(product => product.count));
+      const maxCount = Math.max(...allProduct.map((product) => product.count));
 
-      const productsWithMaxCount = allProduct.filter(product => product.count === maxCount);
+      const productsWithMaxCount = allProduct.filter(
+        (product) => product.count === maxCount
+      );
 
       res.status(200).json({
         success: true,
         message: "this are the product with the higher buying power",
-        productsWithMaxCount
+        productsWithMaxCount,
       });
-
     }
   } catch (error) {
     res.status(400).json({
@@ -458,15 +460,23 @@ const forgetPassword = async (req, res) => {
       const resetURL = `please follow this link to reset your password, this link last for 10 minutes <a href='http://localhost:8000/api/user/reset-password/${tokenUser}'>Click Here</a>`;
       const data = {
         to: email,
-        subject: "forget password reset link",
-        text: "hello user",
+        subject: "Password Reset Link",
+        text: `Password reset link: http://localhost:8000/api/user/reset-password/${tokenUser}`,
         html: resetURL,
       };
       sendMail(data);
-      res.json(tokenUser);
+      // res.json(tokenUser);
+      res.status(200).json({
+        success: true,
+        message: `Password reset link has been sent to your email ${email}`,
+      });
     }
   } catch (error) {
     console.log(error);
+    res.status(400).json({
+      success: false,
+      message: "An error occurred while trying to send the reset email",
+    });
   }
 };
 
@@ -479,22 +489,33 @@ const resetPassword = async (req, res) => {
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
   const user = await User.findOne({
     passwordResetToken: hashedToken,
-    passwordResetExpires: { $$gt: Date.now() },
+    passwordResetExpires: { $gt: Date.now() },
   });
   if (!user) {
-    res.json({
+    res.status(400).json({
       success: false,
       message: "token expires",
     });
   }
-  (user.password = password),
-    (user.passwordResetToken = undefined),
-    (user.passwordResetExpires = undefined);
+
+  // (user.password = password),
+  //   (user.passwordResetToken = undefined),
+  //   (user.passwordResetExpires = undefined);
+
+  // Hash the new password before saving
+  const salt = await bcryptjs.genSalt(10);
+  user.password = await bcryptjs.hash(password, salt);
+
+  // Clear the reset token and expiry date after successful reset
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+
   await user.save();
-  res.json({
+
+  await user.save();
+  res.status(200).json({
     success: true,
-    message: "password reset",
-    user,
+    message: "password reset successfully",
   });
 };
 
@@ -523,6 +544,47 @@ const updatePassword = async (req, res) => {
   }
 };
 
+const updatedRole = async (req, res) => {
+  const { userId, email, role } = req.body;
+  try {
+    // find out if user is not an admin
+    const emailExist = await User.findOne({ email: email });
+    if (!emailExist) {
+      res.status(400).json({
+        success: false,
+        message: "no user with this email",
+      });
+    }
+    console.log("user with this email", emailExist);
+    const userAdmin = await User.findOne({ emailExist, role: "admin" });
+    if (emailExist && userAdmin) {
+      res.status(400).json({
+        success: false,
+        message: "user must not be an admin",
+      });
+    } else if (emailExist && !emailExist.role) {
+      res.status(400).json({
+        success: false,
+        message: "user must have a role",
+      });
+    }
+    // asign role to a user
+    const user = await User.findByIdAndUpdate(
+      emailExist,
+      { role: role },
+      { new: true }
+    );
+    res.status(200).json({
+      success: true,
+      message: "role updated successfully",
+      user,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, message: "error" });
+  }
+};
+
 export {
   registerUser,
   loginUser,
@@ -541,4 +603,5 @@ export {
   allDistributorByLocation,
   distributorMostSaleProduct,
   filterProdPuchaseByDate,
+  updatedRole,
 };

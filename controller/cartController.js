@@ -17,7 +17,6 @@ const addToCart = async (req, res) => {
       cart = new Cart({
         products: [],
         cartTotal: 0,
-
         orderBy: userId,
       });
     }
@@ -31,6 +30,15 @@ const addToCart = async (req, res) => {
         productId,
         count,
         price: product.price,
+        title: product.title,
+        description: product.description,
+        category: product.category,
+        brand: product.brand,
+        quantity: product.quantity,
+        sold: product.sold,
+        images: product.images,
+        rating: product.rating,
+        totalRating: product.totalRating,
       });
     }
     cart.cartTotal = cart.products.reduce(
