@@ -2,10 +2,8 @@ import { generateTokens } from "../config/jwtTokens.js";
 import Cart from "../models/cartModel.js";
 import productModel from "../models/productModel.js";
 import User from "../models/userModel.js";
-// import { sendMail } from "./emailController.js";
 import crypto from "crypto";
 import bcryptjs from "bcryptjs";
-
 import randomstring from "randomstring";
 import sendMail from "../utils/sendMail.js";
 import dotenv from "dotenv";

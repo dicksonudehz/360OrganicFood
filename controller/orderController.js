@@ -6,7 +6,7 @@ import axios from "axios";
 const createOrder = async (req, res) => {
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-  const { userId, address } = req.body;
+  const { userId, address, distEmail } = req.body;
 
   try {
     // Fetch cart and check if cart exists for the user
@@ -17,24 +17,35 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: "Cart is empty" });
     }
     // Fetch distributors and check if any distributor is available
-    const distributors = await User.find({ role: "Distributor" });
-    if (distributors.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "No distributor available" });
+    const userExist = await User.findOne({ email: distEmail });
+    if (!userExist) {
+      return res.status(400).json({
+        success: false,
+        message: "not a registered user",
+      });
     }
-
     // Prepare distributors array for the order
-    const distributorData = distributors.map((distributor) => ({
-      distributorId: distributor._id,
-      firstname: distributor.firstname,
-      lastname: distributor.lastname,
-      email: distributor.email,
-      mobile: distributor.mobile,
-      role: distributor.role,
-      address: distributor.address,
-      isBlocked: distributor.isBlocked,
-    }));
+    const distributors = await User.find({ role: "Distributor" });
+    // const distributorData = distributors.map((distributor) => ({
+    //   distributorId: distributor._id,
+    //   firstname: distributor.firstname,
+    //   lastname: distributor.lastname,
+    //   email: distributor.email,
+    //   mobile: distributor.mobile,
+    //   role: distributor.role,
+    //   address: distributor.address,
+    //   isBlocked: distributor.isBlocked,
+    // }));
+
+    const selectedDistributor = distributors.filter((singleDis) => {
+      return singleDis._id.equals(userExist._id);
+    });
+    if (!selectedDistributor) {
+      res.status(400).json({
+        success: false,
+        message: "select a distributor closest to you",
+      });
+    }
 
     // Product ordered by the user from cart
     const productOrdered = cart.products.map((item) => ({
@@ -63,7 +74,7 @@ const createOrder = async (req, res) => {
       orderStatus: "Processing",
       address: address,
       payment: true,
-      Distributor: distributorData,
+      Distributor: selectedDistributor,
     });
 
     // Save the new order
@@ -105,14 +116,14 @@ const createOrder = async (req, res) => {
     );
 
     // Respond with the Paystack authorization URL
-    res.json({
+    return res.json({
       success: true,
       message: "Payment initialized successfully",
       authorization_url: response.data.data.authorization_url,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Payment initialization failed",
     });
@@ -264,6 +275,96 @@ const allOrdersByLocDist = async (req, res) => {
   }
 };
 
+const allOrdersByDistr = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const userExist = await User.findById(id);
+    if (!userExist) {
+      res.status(400).json({
+        success: false,
+        message: "no user with this email address",
+      });
+    }
+
+    if (userExist) {
+      const allOrders = await orderModel.find({});
+      const filteredDistributors = allOrders.map((order) => {
+        return order.Distributor.filter((dist) =>
+          dist._id.equals(userExist._id)
+        );
+      });
+
+      // const filteredAllOrders = allOrders.map((order) => {
+      //   return order.Distributor.filter((dist) =>
+      //     dist._id.equals(userExist._id)
+      //   );
+      // });
+
+      const distributorOrders = allOrders.filter((order) => {
+        return order.Distributor.some((dist) => dist._id.equals(userExist._id));
+      });
+
+      console.log("distributorOrders", distributorOrders);
+
+      const result = distributorOrders.flat();
+      if (result.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "no user place orders in your region",
+        });
+      }
+      if (distributorOrders) {
+        return res.status(200).json({
+          success: true,
+          message: "All the orders from your users",
+          distributorOrders,
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(400).json({
+      success: false,
+      message: "failed",
+    });
+  }
+};
+
+const distFulfilOrders = async (req, res) => {
+  const { id } = req.params;
+  const { orderStatus } = req.body;
+  try {
+    // check who sign in
+    const user = req.user;
+    if (user.role === "Distributor") {
+      const orderExist = await orderModel.findById(id);
+      if (!orderExist) {
+        res.status(400).json({
+          success: false,
+          message: "No order exist with this ID",
+        });
+      }
+      if (orderExist) {
+        const fulfilSingularOrder = await orderModel.findByIdAndUpdate(
+          id,
+          { orderStatus: orderStatus },
+          { new: true }
+        );
+        res.status(200).json({
+          success: true,
+          message: "role updated successfully",
+          fulfilSingularOrder,
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(400).json({
+      success: false,
+      message: "failed",
+    });
+  }
+};
 export {
   verifyOrder,
   fetchAllOrder,
@@ -273,4 +374,6 @@ export {
   orderByDistributor,
   fulfilOrders,
   allOrdersByLocDist,
+  allOrdersByDistr,
+  distFulfilOrders,
 };
