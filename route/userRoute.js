@@ -19,7 +19,7 @@ userRouter.get("/users",authMiddleware, isAdmin, allUser);
 userRouter.get("/users/:id", authMiddleware, isAdmin, getAUser);
 userRouter.delete("/users/:id", authMiddleware, isAdmin, deleteUser);
 userRouter.post("/users/forget_password", forgetPassword);
-userRouter.post("/users/reset_password/:token", resetPassword);
+userRouter.post("/users/reset/", resetPassword);
 userRouter.post("/users/update/:id", authMiddleware, isAdmin, updatePassword);
 userRouter.put("/users/role/", authMiddleware, isAdmin, updatedRole);
 

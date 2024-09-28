@@ -2,9 +2,15 @@ import { generateTokens } from "../config/jwtTokens.js";
 import Cart from "../models/cartModel.js";
 import productModel from "../models/productModel.js";
 import User from "../models/userModel.js";
-import { sendMail } from "./emailController.js";
+// import { sendMail } from "./emailController.js";
 import crypto from "crypto";
 import bcryptjs from "bcryptjs";
+
+import randomstring from "randomstring";
+import sendMail from "../utils/sendMail.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const registerUser = async (req, res) => {
   try {
@@ -17,9 +23,24 @@ const registerUser = async (req, res) => {
       role: req.body.role,
       address: req.body.address,
     });
+    const userExists = await User.findOne({ email: user.email });
+    if (userExists) {
+      res.status(400).json({
+        success: false,
+        message: "user already exist",
+      });
+    }
     const registerUser = await user.save();
     if (registerUser) {
       res.status(200).json({
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        mobile: user.mobile,
+        password: user.password,
+        role: user.role,
+        address: user.address,
+        token: generateTokens(user._id),
         success: true,
         message: "user registration successful",
         user,
@@ -389,7 +410,7 @@ const allUser = async (req, res) => {
   try {
     const users = await User.find({});
     if (users) {
-      res.json({
+      res.status(200).json({
         success: true,
         message: "available users registered",
         users,
@@ -446,77 +467,83 @@ const deleteUser = async (req, res) => {
 };
 
 const forgetPassword = async (req, res) => {
-  const { email } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const { email } = req.body;
+    const user = await User.findOne({ email: email });
     if (!user) {
-      res.json({
-        success: false,
-        message: "user cannot be found with this email",
-      });
-    } else {
-      const tokenUser = await user.createPasswordResetToken();
-      await user.save();
-      const resetURL = `please follow this link to reset your password, this link last for 10 minutes <a href='http://localhost:8000/api/user/reset-password/${tokenUser}'>Click Here</a>`;
-      const data = {
-        to: email,
-        subject: "Password Reset Link",
-        text: `Password reset link: http://localhost:8000/api/user/reset-password/${tokenUser}`,
-        html: resetURL,
-      };
-      sendMail(data);
-      // res.json(tokenUser);
-      res.status(200).json({
-        success: true,
-        message: `Password reset link has been sent to your email ${email}`,
-      });
+      return res
+        .status(400)
+        .json({ sucess: false, message: "User doesn't exist" });
     }
-  } catch (error) {
-    console.log(error);
-    res.status(400).json({
-      success: false,
-      message: "An error occurred while trying to send the reset email",
+    const otp2 = randomstring.generate({
+      length: 6,
+      charset: "numeric",
     });
+    await User.findByIdAndUpdate(
+      user._id,
+      { otp: otp2 },
+      { new: true, useFindAndModify: false }
+    );
+    const emailContent = `
+      Hello ${user.firstname},
+      Your OTP for password reset is: <strong>${otp2}</strong>
+      This OTP is valid for 10 minutes.
+    `;
+    const emailData = {
+      to: user.email,
+      subject: "Password Reset OTP",
+      text: emailContent,
+    };
+
+    // await sendMail(emailData);
+    await sendMail({ body: emailData }, res);
+    // return res.status(200).json({ message: "OTP sent to your email" });
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(400)
+      .json({ message: "An error occurred while processing the request" });
   }
 };
 
 const resetPassword = async (req, res) => {
-  const { password } = req.body;
-  const { token } = req.params;
-  if (!token) {
-    throw new Error("Token is undefined or null");
+  try {
+    const { otp, password } = req.body;
+    const user = await User.findOne({ otp: otp });
+
+    console.log('this is updatePass', user)
+
+    if (user) {
+      const otp2 = randomstring.generate({
+        length: 6,
+        charset: "numeric",
+      });
+      const newPass = await bcryptjs.hash(password, 10);
+      const updatePass = await User.findByIdAndUpdate(
+        user._id,
+        { password: newPass, otp: otp2 },
+        { new: true, useFindAndModify: false }
+      );
+      if (updatePass) {
+        res.status(200).json({
+          success: true,
+          message: "password updated successfully",
+        });
+      } else {
+        res.status(200).Mathjson({
+          success: false,
+          message: "unable to undate the password",
+        });
+      }
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "user not found",
+      });
+    }
+  } catch (err) {
+    throw new Error(err);
   }
-  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-  const user = await User.findOne({
-    passwordResetToken: hashedToken,
-    passwordResetExpires: { $gt: Date.now() },
-  });
-  if (!user) {
-    res.status(400).json({
-      success: false,
-      message: "token expires",
-    });
-  }
-
-  // (user.password = password),
-  //   (user.passwordResetToken = undefined),
-  //   (user.passwordResetExpires = undefined);
-
-  // Hash the new password before saving
-  const salt = await bcryptjs.genSalt(10);
-  user.password = await bcryptjs.hash(password, salt);
-
-  // Clear the reset token and expiry date after successful reset
-  user.passwordResetToken = undefined;
-  user.passwordResetExpires = undefined;
-
-  await user.save();
-
-  await user.save();
-  res.status(200).json({
-    success: true,
-    message: "password reset successfully",
-  });
 };
 
 const updatePassword = async (req, res) => {
@@ -555,7 +582,6 @@ const updatedRole = async (req, res) => {
         message: "no user with this email",
       });
     }
-    console.log("user with this email", emailExist);
     const userAdmin = await User.findOne({ emailExist, role: "admin" });
     if (emailExist && userAdmin) {
       res.status(400).json({
