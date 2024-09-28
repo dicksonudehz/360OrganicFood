@@ -466,6 +466,7 @@ const deleteUser = async (req, res) => {
   }
 };
 
+
 const forgetPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -574,7 +575,6 @@ const updatePassword = async (req, res) => {
 const updatedRole = async (req, res) => {
   const { userId, email, role } = req.body;
   try {
-    // find out if user is not an admin
     const emailExist = await User.findOne({ email: email });
     if (!emailExist) {
       res.status(400).json({
