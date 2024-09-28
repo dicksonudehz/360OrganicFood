@@ -25,7 +25,10 @@ const sendMail = async (req, res) => {
     res.status(200).json({ message: "Email sent successfully" });
   } catch (error) {
     console.error("Error sending email:", error); // Log error for debugging
-    res.status(500).json({ error: "Failed to send email" });
+    res.status(400).json({
+      success: false,
+      message: "failed to send email",
+    });
   }
 };
 
