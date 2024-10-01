@@ -276,16 +276,14 @@ const allOrdersByLocDist = async (req, res) => {
 };
 
 const allOrdersByDistr = async (req, res) => {
-  const { id } = req.params;
   try {
-    const userExist = await User.findById(id);
+    const userExist = req.user;
     if (!userExist) {
       res.status(400).json({
         success: false,
         message: "no user with this email address",
       });
     }
-
     if (userExist) {
       const allOrders = await orderModel.find({});
       const filteredDistributors = allOrders.map((order) => {
@@ -294,17 +292,9 @@ const allOrdersByDistr = async (req, res) => {
         );
       });
 
-      // const filteredAllOrders = allOrders.map((order) => {
-      //   return order.Distributor.filter((dist) =>
-      //     dist._id.equals(userExist._id)
-      //   );
-      // });
-
       const distributorOrders = allOrders.filter((order) => {
         return order.Distributor.some((dist) => dist._id.equals(userExist._id));
       });
-
-      console.log("distributorOrders", distributorOrders);
 
       const result = distributorOrders.flat();
       if (result.length === 0) {

@@ -23,7 +23,7 @@ orderRouter.post("/verify", authMiddleware, isAdmin, verifyOrder);
 orderRouter.get("/single/:id", authMiddleware, isAdmin, fetchSingleOrder);
 orderRouter.put("/update/:id", authMiddleware, isAdmin, updateOrder);
 orderRouter.get("/distLocation/", authMiddleware, allOrdersByLocDist);
-orderRouter.get("/distOrders/:id", authMiddleware, allOrdersByDistr);
+orderRouter.get("/distOrders/", authMiddleware, allOrdersByDistr);
 orderRouter.put("/fulfil/:id", authMiddleware, distFulfilOrders);
 
 export default orderRouter;

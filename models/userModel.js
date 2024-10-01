@@ -28,6 +28,7 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     otp: { type: String },
+    otpExpiresAt: Date,
     role: {
       type: String,
       default: "user",

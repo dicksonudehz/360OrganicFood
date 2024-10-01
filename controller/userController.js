@@ -464,7 +464,6 @@ const deleteUser = async (req, res) => {
   }
 };
 
-
 const forgetPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -478,11 +477,19 @@ const forgetPassword = async (req, res) => {
       length: 6,
       charset: "numeric",
     });
-    await User.findByIdAndUpdate(
+
+    // convert otp to string
+    const otpString = otp2.toString();
+    const salt = await bcryptjs.genSalt(10);
+    const hashedOtp = await bcryptjs.hash(otpString, salt);
+
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const updateotp = await User.findByIdAndUpdate(
       user._id,
-      { otp: otp2 },
+      { otp: hashedOtp, otpExpiresAt },
       { new: true, useFindAndModify: false }
     );
+    await user.save();
     const emailContent = `
       Hello ${user.firstname},
       Your OTP for password reset is: <strong>${otp2}</strong>
@@ -510,8 +517,6 @@ const resetPassword = async (req, res) => {
     const { otp, password } = req.body;
     const user = await User.findOne({ otp: otp });
 
-    console.log('this is updatePass', user)
-
     if (user) {
       const otp2 = randomstring.generate({
         length: 6,
@@ -526,10 +531,10 @@ const resetPassword = async (req, res) => {
       if (updatePass) {
         res.status(200).json({
           success: true,
-          message: "password updated successfully",
+          message: "password reset successfully",
         });
       } else {
-        res.status(200).Mathjson({
+        res.status(400).json({
           success: false,
           message: "unable to undate the password",
         });
@@ -538,6 +543,39 @@ const resetPassword = async (req, res) => {
       res.status(400).json({
         success: false,
         message: "user not found",
+      });
+    }
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+const verifyOTP = async (req, res) => {
+  const { id } = req.params;
+  const { otp } = req.body;
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(400).json({
+        success: false,
+        message: "user not found",
+      });
+    }
+    const decoded = bcryptjs.compare(otp, user.otp);
+    if (decoded && user.otpExpiresAt > new Date()) {
+      res.status(200).json({
+        success: true,
+        message: "OTP is now verify",
+      });
+    } else if (user.otpExpiresAt <= new Date()) {
+      res.status(400).json({
+        success: false,
+        message: "OTP has expired",
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "OTP is invalid",
       });
     }
   } catch (err) {
@@ -628,4 +666,5 @@ export {
   distributorMostSaleProduct,
   filterProdPuchaseByDate,
   updatedRole,
+  verifyOTP,
 };
