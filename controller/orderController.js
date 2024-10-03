@@ -6,17 +6,15 @@ import axios from "axios";
 const createOrder = async (req, res) => {
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-  const { userId, address, distEmail } = req.body;
+  const { userId, location, distEmail } = req.body;
 
   try {
-    // Fetch cart and check if cart exists for the user
     const cart = await Cart.findOne({ orderBy: userId }).populate(
       "products.productId"
     );
     if (!cart || cart.products.length === 0) {
       return res.status(400).json({ success: false, message: "Cart is empty" });
     }
-    // Fetch distributors and check if any distributor is available
     const userExist = await User.findOne({ email: distEmail });
     if (!userExist) {
       return res.status(400).json({
@@ -24,30 +22,24 @@ const createOrder = async (req, res) => {
         message: "not a registered user",
       });
     }
-    // Prepare distributors array for the order
     const distributors = await User.find({ role: "Distributor" });
-    // const distributorData = distributors.map((distributor) => ({
-    //   distributorId: distributor._id,
-    //   firstname: distributor.firstname,
-    //   lastname: distributor.lastname,
-    //   email: distributor.email,
-    //   mobile: distributor.mobile,
-    //   role: distributor.role,
-    //   address: distributor.address,
-    //   isBlocked: distributor.isBlocked,
-    // }));
-
     const selectedDistributor = distributors.filter((singleDis) => {
       return singleDis._id.equals(userExist._id);
     });
     if (!selectedDistributor) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "select a distributor closest to you",
       });
     }
-
-    // Product ordered by the user from cart
+    const distLocation = selectedDistributor[0].location;
+    console.log("selectedDistributor", distLocation);
+    if (!distLocation) {
+      return res.status(400).json({
+        success: false,
+        message: "select valid distributor location",
+      });
+    }
     const productOrdered = cart.products.map((item) => ({
       productId: item.productId,
       count: item.count,
@@ -61,26 +53,20 @@ const createOrder = async (req, res) => {
       rating: item.rating,
       totalRating: item.totalRating,
     }));
-    // Calculate total amount
     const totalAmount = cart.products.reduce(
       (sum, product) => sum + product.price * product.count,
       0
     );
-    // Create a new order
     const newOrder = new orderModel({
       userId,
       products: productOrdered,
       orderTotal: totalAmount,
       orderStatus: "Processing",
-      address: address,
+      location: distLocation,
       payment: true,
       Distributor: selectedDistributor,
     });
-
-    // Save the new order
     await newOrder.save();
-
-    // Clear the user's cart after placing the order
     await Cart.findOneAndUpdate(
       { orderBy: userId },
       { $set: { products: [] } }
@@ -89,8 +75,6 @@ const createOrder = async (req, res) => {
     // Fetch user email for payment
     const user = await User.findById(userId);
     const email = user.email;
-
-    // Initialize payment with Paystack
     const response = await axios.post(
       "https://api.paystack.co/transaction/initialize",
       {
@@ -115,7 +99,6 @@ const createOrder = async (req, res) => {
       }
     );
 
-    // Respond with the Paystack authorization URL
     return res.json({
       success: true,
       message: "Payment initialized successfully",
@@ -242,20 +225,17 @@ const fulfilOrders = async (req, res) => {
 };
 
 const allOrdersByLocDist = async (req, res) => {
-  const { address } = req.body;
+  const { location } = req.body;
   try {
-    // console.log(userId);
     const allOrders = await orderModel.find({});
-
     const filteredDistributors = allOrders.map((order) => {
-      return order.Distributor.filter((dist) => dist.address === address);
+      return order.Distributor.filter((dist) => dist.location === location);
     });
-
     const result = filteredDistributors.flat();
     if (result.length === 0) {
       res.status(400).json({
         success: false,
-        message: "no distributor with the above address",
+        message: "no distributor with the above location",
       });
     }
     console.log("filteredDistributors", filteredDistributors);

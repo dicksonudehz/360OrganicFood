@@ -63,10 +63,11 @@ const createDistributor = async (req, res) => {
       password: req.body.password,
       role: req.body.role,
       address: req.body.address,
+      location: req.body.location,
     });
     const userDistributor = user.role;
     if (userDistributor !== "Distributor") {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "user must be a distributor",
       });
@@ -74,7 +75,7 @@ const createDistributor = async (req, res) => {
     if (user && userDistributor) {
       user.role = "Distributor";
       await user.save();
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: "you have register as a distributor",
         user,
@@ -84,7 +85,6 @@ const createDistributor = async (req, res) => {
         success: false,
         message: "user must be a distributor",
       });
-      rerturn;
     }
   } catch (error) {
     console.log(error);
@@ -314,6 +314,8 @@ const filterProdPuchaseByDate = async (req, res) => {
 };
 
 const loginUser = async (req, res) => {
+  const user = req.user;
+  console.log(user);
   const { email, password } = req.body;
   try {
     const findUser = await User.findOne({ email });

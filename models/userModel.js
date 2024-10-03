@@ -36,6 +36,9 @@ const userSchema = new mongoose.Schema(
     address: {
       type: String,
     },
+    location: {
+      type: String,
+    },
     // orders:[],
     isBlocked: {
       type: Boolean,

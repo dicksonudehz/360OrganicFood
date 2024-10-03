@@ -9,12 +9,26 @@ const authMiddleware = async (req, res, next) => {
       if (token) {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded?.id);
+        if (!user) {
+          res.status(400).json({
+            success: false,
+            message: "No user found",
+          });
+        }
         req.user = user;
-        req.body.userId = decoded?.id;
+        req.body._id = decoded?.id;
         next();
+      } else {
+        res.status(400).json({
+          success: false,
+          message: "token is invalid",
+        });
       }
     } catch (error) {
-      throw new Error("Not authorize token expired, please login again");
+      res.status(400).json({
+        success: false,
+        message: "Not authorize token expired, please login again",
+      });
     }
   } else {
     throw new Error("There is no token attached to header");
@@ -22,12 +36,20 @@ const authMiddleware = async (req, res, next) => {
 };
 
 const isAdmin = async (req, res, next) => {
-  const { email } = req.user;
-  const adminUser = await User.findOne({ email });
-  if (adminUser.role !== "admin") {
-    throw new Error("you are not an admin");
-  } else {
-    next();
+  const { role } = req.user;
+  try {
+    if (role !== "admin") {
+      return res.status(400).json({
+        success: false,
+        message: "You are not authorized as admin",
+      });
+    } else {
+      next();
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ error: "Server error while verifying admin" });
   }
 };
 
