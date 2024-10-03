@@ -45,7 +45,6 @@ userRouter.get(
 userRouter.get(
   "/distributorLocation/",
   authMiddleware,
-  isAdmin,
   allDistributorByLocation
 );
 userRouter.post("/login", loginUser);
