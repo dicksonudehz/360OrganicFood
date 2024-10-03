@@ -25,14 +25,9 @@ import { authMiddleware, isAdmin } from "../middleware/authMiddleware.js";
 const userRouter = express.Router();
 
 userRouter.post("/register", registerUser);
-userRouter.post("/disRegister",authMiddleware, isAdmin, createDistributor);
-userRouter.get("/distributor", authMiddleware, isAdmin, fetchAlldistributor);
-userRouter.get(
-  "/singleDistributor",
-  authMiddleware,
-  isAdmin,
-  getSingleDistributor
-);
+userRouter.post("/disRegister", authMiddleware, isAdmin, createDistributor);
+userRouter.get("/distributor", authMiddleware, fetchAlldistributor);
+userRouter.get("/singleDistributor", authMiddleware, getSingleDistributor);
 userRouter.post("/blockDistributor", authMiddleware, isAdmin, blockDistributor);
 userRouter.delete(
   "/deleteDistributor/:id",

@@ -209,11 +209,11 @@ const allDistributorByLocation = async (req, res) => {
     const allDistributors = await User.find({ role: "Distributor" });
     if (allDistributors) {
       const allDistAddress = allDistributors.map(
-        (distributor) => distributor.address
+        (distributor) => distributor.location
       );
       res.status(200).json({
         success: true,
-        message: "distributor's address",
+        message: "distributor's location",
         allDistAddress,
       });
     }
