@@ -114,6 +114,7 @@ const createOrder = async (req, res) => {
 
 const verifyOrder = async (req, res) => {
   const { orderId, success } = req.body;
+  // const { orderId, success } = req.params;
   try {
     if (success === true) {
       await orderModel.findByIdAndUpdate(orderId, { payment: true });
