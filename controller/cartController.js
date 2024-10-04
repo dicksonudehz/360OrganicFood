@@ -62,7 +62,8 @@ const addToCart = async (req, res) => {
 };
 
 const removeCart = async (req, res) => {
-  const { userId, productId, count } = req.body;
+  const { productId, count } = req.body;
+  const { userId } = req.params;
 
   try {
     const product = await productModel.findById(productId);
@@ -79,7 +80,6 @@ const removeCart = async (req, res) => {
         message: "No cart found for this user",
       });
     }
-
     const productIndex = cart.products.findIndex(
       (item) => item.productId.toString() === productId
     );
@@ -122,10 +122,10 @@ const removeCart = async (req, res) => {
 };
 
 const getAllCartItem = async (req, res) => {
-  const { userId } = req.body;
+  const { userId } = req.params;
   try {
     const userLogin = await User.findById(userId);
-    if (!userId) {
+    if (!userLogin) {
       res.status(400).json({
         success: false,
         message: "user does not exist",
@@ -134,12 +134,11 @@ const getAllCartItem = async (req, res) => {
     const userOrdersCart = await Cart.find({ orderBy: userLogin._id }).populate(
       "products.productId"
     );
-    // const userOrdersCart = await Cart.find({}).populate("products.productId");
     console.log("userOrdersCart", userOrdersCart);
     if (!userOrdersCart) {
       res.status(400).json({
         success: true,
-        message: "No product is available in cart",
+        message: "No product is available in your cart",
       });
     }
     res.json({

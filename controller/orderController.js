@@ -33,7 +33,6 @@ const createOrder = async (req, res) => {
       });
     }
     const distLocation = selectedDistributor[0].location;
-    console.log("selectedDistributor", distLocation);
     if (!distLocation) {
       return res.status(400).json({
         success: false,
