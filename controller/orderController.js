@@ -266,29 +266,47 @@ const allOrdersByDistr = async (req, res) => {
       });
     }
     if (userExist) {
+      // const filteredDistributors = allOrders.map((order) => {
+      //   return order.Distributor.filter((dist) =>
+      //     dist._id.equals(userExist._id)
+      //   );
+      // });
       const allOrders = await orderModel.find({});
-      const filteredDistributors = allOrders.map((order) => {
-        return order.Distributor.filter((dist) =>
-          dist._id.equals(userExist._id)
-        );
-      });
-
       const distributorOrders = allOrders.filter((order) => {
         return order.Distributor.some((dist) => dist._id.equals(userExist._id));
       });
-
-      const result = distributorOrders.flat();
+      const ordersWithUserDetails = await Promise.all(
+        distributorOrders.map(async (eachOrder) => {
+          const user = await User.findById(eachOrder.userId);
+          return {
+            ...eachOrder.toObject(),
+            orderBy: {
+              _id: user._id,
+              firstname: user.firstname,
+              lastname: user.lastname,
+              email: user.email,
+              mobile: user.mobile,
+              address: user.address,
+              location: user.location,
+              cart: user.cart,
+              wishlist: user.wishList,
+            },
+          };
+        })
+      );
+      const result = ordersWithUserDetails.flat();
       if (result.length === 0) {
         return res.status(400).json({
           success: false,
           message: "no user place orders in your region",
         });
       }
-      if (distributorOrders) {
+      if (result) {
         return res.status(200).json({
           success: true,
           message: "All the orders from your users",
-          distributorOrders,
+          result,
+          // userExist
         });
       }
     }

@@ -5,7 +5,6 @@ const orderSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true, // Ensure userId is required
     },
     products: [],
     orderTotal: { type: Number, required: true },
