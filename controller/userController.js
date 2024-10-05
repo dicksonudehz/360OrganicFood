@@ -553,10 +553,9 @@ const resetPassword = async (req, res) => {
 };
 
 const verifyOTP = async (req, res) => {
-  const { id } = req.params;
-  const { otp } = req.body;
+  const { otp, email } = req.body;
   try {
-    const user = await User.findById(id);
+    const user = await User.findOne({ email: email });
     if (!user) {
       res.status(400).json({
         success: false,
@@ -567,7 +566,7 @@ const verifyOTP = async (req, res) => {
     if (decoded && user.otpExpiresAt > new Date()) {
       res.status(200).json({
         success: true,
-        message: "OTP is now verify",
+        message: "OTP is verified",
       });
     } else if (user.otpExpiresAt <= new Date()) {
       res.status(400).json({

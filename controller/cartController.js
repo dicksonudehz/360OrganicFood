@@ -122,9 +122,9 @@ const removeCart = async (req, res) => {
 };
 
 const getAllCartItem = async (req, res) => {
-  const { userId } = req.params;
+  const { id } = req.params;
   try {
-    const userLogin = await User.findById(userId);
+    const userLogin = await User.findById(id);
     if (!userLogin) {
       res.status(400).json({
         success: false,
