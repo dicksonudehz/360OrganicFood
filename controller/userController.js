@@ -503,7 +503,6 @@ const forgetPassword = async (req, res) => {
       text: emailContent,
     };
 
-    // await sendMail(emailData);
     await sendMail({ body: emailData }, res);
     // return res.status(200).json({ message: "OTP sent to your email" });
   } catch (err) {
