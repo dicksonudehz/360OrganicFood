@@ -515,7 +515,7 @@ const forgetPassword = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { email, otp, password } = req.body;
+    const { email, password } = req.body;
     const user = await User.findOne({ email: email });
     console.log(user);
     if (!user) {
@@ -523,14 +523,11 @@ const resetPassword = async (req, res) => {
         success: false,
         message: "user not found",
       });
-    }
-    const isMatchOTP = bcryptjs.compare(otp, user.otp);
-    const updateOTPString = isMatchOTP.toString();
-    if (isMatchOTP && user.otpExpiresAt > new Date()) {
+    }else{
       const newPass = await bcryptjs.hash(password, 10);
       const updatePass = await User.findByIdAndUpdate(
         user._id,
-        { password: newPass, otp: updateOTPString },
+        { password: newPass },
         { new: true, useFindAndModify: false }
       );
       if (updatePass) {
@@ -541,14 +538,9 @@ const resetPassword = async (req, res) => {
       } else {
         return res.status(400).json({
           success: false,
-          message: "unable to undate the password",
+          message: "unable to reset the password",
         });
       }
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: "otp has expired or the otp does not match",
-      });
     }
   } catch (err) {
     throw new Error(err);
