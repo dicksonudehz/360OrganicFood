@@ -62,8 +62,8 @@ const addToCart = async (req, res) => {
 };
 
 const removeCart = async (req, res) => {
-  const { productId, count } = req.body;
-  const { userId } = req.params;
+  const { userId, productId, count } = req.body;
+  // const { userId } = req.params;
 
   try {
     const product = await productModel.findById(productId);
