@@ -6,7 +6,7 @@ import axios from "axios";
 const createOrder = async (req, res) => {
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-  const { userId, location, distEmail } = req.body;
+  const { userId, location, address, distEmail } = req.body;
 
   try {
     const cart = await Cart.findOne({ orderBy: userId }).populate(
@@ -62,6 +62,7 @@ const createOrder = async (req, res) => {
       orderTotal: totalAmount,
       orderStatus: "Processing",
       location: distLocation,
+      address: address,
       payment: true,
       Distributor: selectedDistributor,
     });

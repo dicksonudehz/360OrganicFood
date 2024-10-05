@@ -15,6 +15,7 @@ const orderSchema = new mongoose.Schema(
       default: "Processing",
     },
     location: { type: String, required: true },
+    address: { type: String, required: true },
     payment: { type: Boolean, default: false },
     Distributor: { type: Array, required: true },
   },
