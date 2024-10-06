@@ -177,6 +177,7 @@ const fetchSingleOrder = async (req, res) => {
 
 const updateOrder = async (req, res) => {
   const { id } = req.params;
+  const { status } = req.body;
   try {
     const updateAnOrder = await orderModel.findById(id);
     if (!updateAnOrder) {
@@ -185,9 +186,13 @@ const updateOrder = async (req, res) => {
         message: " order does not exist",
       });
     } else {
-      const updateOrder = await orderModel.findByIdAndUpdate(id, req.body, {
-        new: true,
-      });
+      const updateOrder = await orderModel.findByIdAndUpdate(
+        id,
+        {
+          orderStatus: status,
+        },
+        { new: true }
+      );
       res.json({
         success: true,
         message: " order updated successfully",
