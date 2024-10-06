@@ -24,6 +24,6 @@ orderRouter.get("/single/:id", authMiddleware, isAdmin, fetchSingleOrder);
 orderRouter.put("/update/:id", authMiddleware, isAdmin, updateOrder);
 orderRouter.get("/distLocation/", authMiddleware, allOrdersByLocDist);
 orderRouter.get("/distOrders/", authMiddleware, allOrdersByDistr);
-orderRouter.get("/fulfil/:id", authMiddleware, distSingleOrder);
+orderRouter.get("/distSingleOrder/:id", authMiddleware, distSingleOrder);
 
 export default orderRouter;
