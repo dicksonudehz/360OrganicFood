@@ -334,6 +334,7 @@ const distFulfilOrders = async (req, res) => {
         });
       }
       if (orderExist) {
+      const user = await User.findById(orderExist.userId);
         const fulfilSingularOrder = await orderModel.findByIdAndUpdate(
           id,
           { orderStatus: orderStatus },
@@ -343,6 +344,7 @@ const distFulfilOrders = async (req, res) => {
           success: true,
           message: "role updated successfully",
           fulfilSingularOrder,
+          orderBy:user
         });
       }
     }
