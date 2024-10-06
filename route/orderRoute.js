@@ -3,7 +3,7 @@ import {
   allOrdersByDistr,
   allOrdersByLocDist,
   createOrder,
-  distFulfilOrders,
+  distSingleOrder,
   fetchAllOrder,
   fetchSingleOrder,
   fulfilOrders,
@@ -24,6 +24,6 @@ orderRouter.get("/single/:id", authMiddleware, isAdmin, fetchSingleOrder);
 orderRouter.put("/update/:id", authMiddleware, isAdmin, updateOrder);
 orderRouter.get("/distLocation/", authMiddleware, allOrdersByLocDist);
 orderRouter.get("/distOrders/", authMiddleware, allOrdersByDistr);
-orderRouter.put("/fulfil/:id", authMiddleware, distFulfilOrders);
+orderRouter.get("/fulfil/:id", authMiddleware, distSingleOrder);
 
 export default orderRouter;

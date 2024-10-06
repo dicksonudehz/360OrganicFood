@@ -114,18 +114,25 @@ const createOrder = async (req, res) => {
 };
 
 const verifyOrder = async (req, res) => {
-  const { orderId, success } = req.body;
-  // const { orderId, success } = req.params;
+  const { orderId } = req.params;
+  const { payment } = req.body;
   try {
-    if (success === true) {
-      await orderModel.findByIdAndUpdate(orderId, { payment: true });
-      res.json({
-        success: true,
-        message: " paid",
+    const verifyAnOrder = await orderModel.findById(orderId);
+    if (!verifyAnOrder) {
+      res.status(200).json({
+        success: false,
+        message: " order does not exist",
       });
     } else {
-      await orderModel.findByIdAndDelete(orderId);
-      res.json({ success: false, message: "not paid" });
+      const orderVerify = await orderModel.findByIdAndUpdate(orderId, {
+        payment: payment,
+      });
+      const user = await User.findById(orderVerify.userId);
+      res.json({
+        success: true,
+        message: " order has been verified",
+        orderBy: user,
+      });
     }
   } catch (error) {
     console.log(error);
@@ -149,26 +156,44 @@ const fetchSingleOrder = async (req, res) => {
   const { id } = req.params;
   try {
     const singleOrder = await orderModel.findById(id);
-    res.json({
-      success: true,
-      message: " all available orders",
-      singleOrder,
-    });
+    if (!singleOrder) {
+      res.json({
+        success: false,
+        message: " order does not exist",
+      });
+    } else if (singleOrder) {
+      const user = await User.findById(singleOrder.userId);
+      res.json({
+        success: true,
+        message: " order detail",
+        singleOrder,
+        orderBy: user,
+      });
+    }
   } catch (error) {
     console.log(error);
   }
 };
+
 const updateOrder = async (req, res) => {
   const { id } = req.params;
   try {
-    const updateOrder = await orderModel.findByIdAndUpdate(id, req.body, {
-      new: true,
-    });
-    res.json({
-      success: true,
-      message: " order updated successfully",
-      updateOrder,
-    });
+    const updateAnOrder = await orderModel.findById(id);
+    if (!updateAnOrder) {
+      res.json({
+        success: true,
+        message: " order does not exist",
+      });
+    } else {
+      const updateOrder = await orderModel.findByIdAndUpdate(id, req.body, {
+        new: true,
+      });
+      res.json({
+        success: true,
+        message: " order updated successfully",
+        updateOrder,
+      });
+    }
   } catch (error) {
     console.log(error);
     res.json({
@@ -209,7 +234,6 @@ const orderByDistributor = async (req, res) => {
 const fulfilOrders = async (req, res) => {
   try {
     const fulfilOrders = await orderModel.find({ payment: "true" });
-    console.log("fulfilOrders", fulfilOrders);
     if (fulfilOrders) {
       res.status(200).json({
         success: true,
@@ -229,8 +253,9 @@ const allOrdersByLocDist = async (req, res) => {
   const { location } = req.body;
   try {
     const allOrders = await orderModel.find({});
-    const filteredDistributors = allOrders.map((order) => {
+    const filteredDistributors = allOrders.map(async (order) => {
       return order.Distributor.filter((dist) => dist.location === location);
+      const user = await User.findById(order.userId);
     });
     const result = filteredDistributors.flat();
     if (result.length === 0) {
@@ -239,8 +264,6 @@ const allOrdersByLocDist = async (req, res) => {
         message: "no distributor with the above location",
       });
     }
-    console.log("filteredDistributors", filteredDistributors);
-
     if (filteredDistributors) {
       res.status(200).json({
         success: true,
@@ -319,9 +342,8 @@ const allOrdersByDistr = async (req, res) => {
   }
 };
 
-const distFulfilOrders = async (req, res) => {
+const distSingleOrder = async (req, res) => {
   const { id } = req.params;
-  const { orderStatus } = req.body;
   try {
     // check who sign in
     const user = req.user;
@@ -334,19 +356,19 @@ const distFulfilOrders = async (req, res) => {
         });
       }
       if (orderExist) {
-      const user = await User.findById(orderExist.userId);
-        const fulfilSingularOrder = await orderModel.findByIdAndUpdate(
-          id,
-          { orderStatus: orderStatus },
-          { new: true }
-        );
+        const user = await User.findById(orderExist.userId);
         res.status(200).json({
           success: true,
-          message: "role updated successfully",
-          fulfilSingularOrder,
-          orderBy:user
+          message: "single order",
+          orderExist,
+          orderBy: user,
         });
       }
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "you are not a distributor",
+      });
     }
   } catch (error) {
     console.log(error);
@@ -366,5 +388,5 @@ export {
   fulfilOrders,
   allOrdersByLocDist,
   allOrdersByDistr,
-  distFulfilOrders,
+  distSingleOrder,
 };
