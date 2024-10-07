@@ -21,7 +21,7 @@ orderRouter.get("/fulfilOrders/", authMiddleware, fulfilOrders);
 orderRouter.get("/all", authMiddleware, isAdmin, fetchAllOrder);
 orderRouter.post("/verify", authMiddleware, isAdmin, verifyOrder);
 orderRouter.get("/single/:id", authMiddleware, isAdmin, fetchSingleOrder);
-orderRouter.put("/update/:id", authMiddleware, isAdmin, updateOrder);
+orderRouter.put("/update/:id", authMiddleware, updateOrder);
 orderRouter.get("/distLocation/", authMiddleware, allOrdersByLocDist);
 orderRouter.get("/distOrders/", authMiddleware, allOrdersByDistr);
 orderRouter.get("/distSingleOrder/:id", authMiddleware, distSingleOrder);

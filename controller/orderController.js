@@ -179,9 +179,17 @@ const updateOrder = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   try {
+    const distLogin = req.user;
+    if (distLogin.role !== "Distributor") {
+      return res.json({
+        success: true,
+        message: " you must be a distributor to perform this function",
+      });
+    }
     const updateAnOrder = await orderModel.findById(id);
+    const user = await User.findById(updateAnOrder.userId);
     if (!updateAnOrder) {
-      res.json({
+      return res.json({
         success: true,
         message: " order does not exist",
       });
@@ -193,15 +201,16 @@ const updateOrder = async (req, res) => {
         },
         { new: true }
       );
-      res.json({
+      return res.json({
         success: true,
         message: " order updated successfully",
         updateOrder,
+        orderBy: user,
       });
     }
   } catch (error) {
     console.log(error);
-    res.json({
+    return res.json({
       success: false,
       message: "failed",
     });
@@ -260,7 +269,7 @@ const allOrdersByLocDist = async (req, res) => {
     const allOrders = await orderModel.find({});
     const filteredDistributors = allOrders.map(async (order) => {
       return order.Distributor.filter((dist) => dist.location === location);
-      const user = await User.findById(order.userId);
+      // const user = await User.findById(order.userId);
     });
     const result = filteredDistributors.flat();
     if (result.length === 0) {
@@ -274,6 +283,7 @@ const allOrdersByLocDist = async (req, res) => {
         success: true,
         message: "all orders by this users according to the location entered",
         filteredDistributors,
+        // orderBy:user
       });
     }
   } catch (error) {
