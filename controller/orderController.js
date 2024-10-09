@@ -80,7 +80,7 @@ const createOrder = async (req, res) => {
       {
         email,
         amount: totalAmount * 100, // Convert to cents/kobo
-        currency: "₦",  
+        currency: "NGN",
         metadata: {
           orderId: newOrder._id,
           custom_fields: [
