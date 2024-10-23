@@ -264,13 +264,119 @@ const fulfilOrders = async (req, res) => {
   }
 };
 
+const fulfilDistOrdersByAdmin = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  try {
+    const orderByAUser = await orderModel.findById(id)
+    const userDetails = await User.findById(orderByAUser.userId);
+    if (userDetails.role === "Distributor") {
+      const updateOrder = await orderModel.findByIdAndUpdate(
+        id,
+        {
+          orderStatus: status,
+        },
+        { new: true }
+      );
+      res.status(200).json({
+        success: true,
+        message: "order by the distributor updated",
+        updateOrder,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "order is not by a distributor",
+      });
+    }
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "error",
+    });
+  }
+};
+
+const filterOrdersByDateRange = async (req, res) => {
+  const { startDate } = req.body;
+  const { endDate } = req.body;
+  try {
+    const allOrders = await orderModel.find({});
+    const filteredOrdersByDateRange = allOrders.filter((order) => {
+      const orderCreatedAt = new Date(order.createdAt);
+      return (
+        orderCreatedAt >= new Date(startDate) &&
+        orderCreatedAt <= new Date(endDate)
+      );
+    });
+    console.log("filteredOrdersByDateRange", filteredOrdersByDateRange);
+    const resultStatus = filteredOrdersByDateRange.flat();
+    if (resultStatus.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no orders available within this date range",
+      });
+    }
+    if (filteredOrdersByDateRange) {
+      return res.status(200).json({
+        success: true,
+        message: "available orders within the range",
+        resultStatus,
+      });
+    }
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: "error",
+    });
+  }
+};
+
+const filterOrdersByStatus = async (req, res) => {
+  const { orderStatus } = req.body;
+  try {
+    const distUser = req.user;
+    if (distUser.role !== "Distributor") {
+      res.status(400).json({
+        success: false,
+        message: "user must be a distributor",
+      });
+    }
+    const allOrders = await orderModel.find({});
+    const filterDistOrdersStatus = allOrders.filter((order) => {
+      return order.orderStatus === orderStatus;
+    });
+    const resultStatus = filterDistOrdersStatus.flat();
+    if (resultStatus.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: `no Orders available with status ${orderStatus}`,
+      });
+    }
+    if (filterDistOrdersStatus) {
+      res.status(200).json({
+        success: true,
+        message: "available orders",
+        filterDistOrdersStatus,
+      });
+    }
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "error",
+    });
+  }
+};
+
 const allOrdersByLocDist = async (req, res) => {
   const { location } = req.body;
   try {
     const allOrders = await orderModel.find({});
-    const filteredDistributors = allOrders.map(async (order) => {
-      return order.Distributor.filter((dist) => dist.location === location);
-      // const user = await User.findById(order.userId);
+    // const filteredDistributors = allOrders.map( (order) => {
+    //   return order.Distributor.filter((dist) => dist.location === location);
+    // });
+    const filteredDistributors = allOrders.filter((order) => {
+      return order.location === location;
     });
     const result = filteredDistributors.flat();
     if (result.length === 0) {
@@ -279,6 +385,7 @@ const allOrdersByLocDist = async (req, res) => {
         message: "no distributor with the above location",
       });
     }
+    console.log("filteredDistributors", filteredDistributors);
     if (filteredDistributors) {
       res.status(200).json({
         success: true,
@@ -405,4 +512,7 @@ export {
   allOrdersByLocDist,
   allOrdersByDistr,
   distSingleOrder,
+  filterOrdersByStatus,
+  filterOrdersByDateRange,
+  fulfilDistOrdersByAdmin,
 };

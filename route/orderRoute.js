@@ -6,6 +6,9 @@ import {
   distSingleOrder,
   fetchAllOrder,
   fetchSingleOrder,
+  filterOrdersByDateRange,
+  filterOrdersByStatus,
+  fulfilDistOrdersByAdmin,
   fulfilOrders,
   orderByDistributor,
   updateOrder,
@@ -25,5 +28,13 @@ orderRouter.put("/update/:id", authMiddleware, updateOrder);
 orderRouter.get("/distLocation/", authMiddleware, allOrdersByLocDist);
 orderRouter.get("/distOrders/", authMiddleware, allOrdersByDistr);
 orderRouter.get("/distSingleOrder/:id", authMiddleware, distSingleOrder);
+orderRouter.post("/orderStatus/", authMiddleware, filterOrdersByStatus);
+orderRouter.post("/filterDateRange/", authMiddleware, filterOrdersByDateRange);
+orderRouter.put(
+  "/filterDateRange/:id",
+  authMiddleware,
+  isAdmin,
+  fulfilDistOrdersByAdmin
+);
 
 export default orderRouter;

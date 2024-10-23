@@ -150,19 +150,28 @@ const blockDistributor = async (req, res) => {
   const { userId } = req.body;
   try {
     const blockDistributor = await User.findById(userId);
-    if (!blockDistributor) {
+    if (blockDistributor.role === "Distributor"){
+      if (!blockDistributor) {
+        res.status(400).json({
+          success: false,
+          message: "distributor does not exist",
+        });
+      } else {
+        blockDistributor.isBlocked = "true";
+      }
+      res.status(200).json({
+        success: true,
+        message: "this distributor is block",
+        blockDistributor,
+      });
+    }else{
       res.status(400).json({
         success: false,
-        message: "distributor does not exist",
+        message: "user must be a distributor",
+       
       });
-    } else {
-      blockDistributor.isBlocked = "true";
     }
-    res.status(200).json({
-      success: true,
-      message: "this distributor is block",
-      blockDistributor,
-    });
+
   } catch (error) {
     res.status(400).json({
       success: false,
