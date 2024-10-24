@@ -268,7 +268,7 @@ const fulfilDistOrdersByAdmin = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   try {
-    const orderByAUser = await orderModel.findById(id)
+    const orderByAUser = await orderModel.findById(id);
     const userDetails = await User.findById(orderByAUser.userId);
     if (userDetails.role === "Distributor") {
       const updateOrder = await orderModel.findByIdAndUpdate(

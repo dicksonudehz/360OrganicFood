@@ -72,8 +72,15 @@ const createDistributor = async (req, res) => {
         message: "user must be a distributor",
       });
     }
+    const userExists = await User.findOne({ email: user.email });
+    if (userExists) {
+      return res.status(400).json({
+        success: false,
+        message: "user already exist",
+      });
+    }
     if (user && userDistributor) {
-      user.role = "Distributor";
+      user.role === "Distributor";
       await user.save();
       return res.status(200).json({
         success: true,
@@ -81,7 +88,7 @@ const createDistributor = async (req, res) => {
         user,
       });
     } else {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "user must be a distributor",
       });
@@ -89,7 +96,7 @@ const createDistributor = async (req, res) => {
   } catch (error) {
     console.log(error);
   }
-  res.status(400).json({
+  return res.status(400).json({
     success: false,
     message: "failed",
   });
@@ -150,7 +157,7 @@ const blockDistributor = async (req, res) => {
   const { userId } = req.body;
   try {
     const blockDistributor = await User.findById(userId);
-    if (blockDistributor.role === "Distributor"){
+    if (blockDistributor.role === "Distributor") {
       if (!blockDistributor) {
         res.status(400).json({
           success: false,
@@ -164,14 +171,12 @@ const blockDistributor = async (req, res) => {
         message: "this distributor is block",
         blockDistributor,
       });
-    }else{
+    } else {
       res.status(400).json({
         success: false,
         message: "user must be a distributor",
-       
       });
     }
-
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -532,7 +537,7 @@ const resetPassword = async (req, res) => {
         success: false,
         message: "user not found",
       });
-    }else{
+    } else {
       const newPass = await bcryptjs.hash(password, 10);
       const updatePass = await User.findByIdAndUpdate(
         user._id,
