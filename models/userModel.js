@@ -39,6 +39,9 @@ const userSchema = new mongoose.Schema(
     location: {
       type: String,
     },
+    distributorNumber: {
+      type: String,
+    },
     // orders:[],
     isBlocked: {
       type: Boolean,
@@ -95,6 +98,6 @@ userSchema.methods.createPasswordResetToken = async function () {
   return resetToken;
 };
 
-const User = mongoose.model("user", userSchema);
+const User = mongoose.model("User", userSchema);
 
 export default User;

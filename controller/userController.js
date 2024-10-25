@@ -54,6 +54,7 @@ const registerUser = async (req, res) => {
 };
 
 const createDistributor = async (req, res) => {
+  const uniqueNumber = Math.floor(100000 + Math.random() * 900000);
   try {
     const user = new User({
       firstname: req.body.firstname,
@@ -64,14 +65,8 @@ const createDistributor = async (req, res) => {
       role: req.body.role,
       address: req.body.address,
       location: req.body.location,
+      distributorNumber: uniqueNumber,
     });
-    const userDistributor = user.role;
-    if (userDistributor !== "Distributor") {
-      return res.status(400).json({
-        success: false,
-        message: "user must be a distributor",
-      });
-    }
     const userExists = await User.findOne({ email: user.email });
     if (userExists) {
       return res.status(400).json({
@@ -79,12 +74,18 @@ const createDistributor = async (req, res) => {
         message: "user already exist",
       });
     }
-    if (user && userDistributor) {
-      user.role === "Distributor";
+    const userMobile = await User.findOne({ mobile: user.mobile });
+    if (userMobile) {
+      return res.status(400).json({
+        success: false,
+        message: "phone number already taken",
+      });
+    }
+    if (user.role === "Distributor") {
       await user.save();
       return res.status(200).json({
         success: true,
-        message: "you have register as a distributor",
+        message: "distributor registered successfully",
         user,
       });
     } else {
@@ -94,12 +95,11 @@ const createDistributor = async (req, res) => {
       });
     }
   } catch (error) {
-    console.log(error);
+    return res.status(400).json({
+      success: false,
+      message: "failed",
+    });
   }
-  return res.status(400).json({
-    success: false,
-    message: "failed",
-  });
 };
 
 const fetchAlldistributor = async (req, res) => {

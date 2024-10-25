@@ -13,7 +13,7 @@ const orderSchema = new mongoose.Schema(
       enum: ["Processing", "Delivered", "Cancelled"],
       default: "Processing",
     },
-    location: { type: String, required: true },
+    location: { type: String },
     address: { type: String, required: true },
     payment: { type: Boolean, default: false },
     Distributor: { type: Array, required: true },

@@ -13,13 +13,22 @@ const createOrder = async (req, res) => {
       "products.productId"
     );
     if (!cart || cart.products.length === 0) {
-      return res.status(400).json({ success: false, message: "Cart is empty" });
+      return res.status(400).json({
+        success: false,
+        message: "Cart is empty",
+      });
     }
     const userExist = await User.findOne({ email: distEmail });
     if (!userExist) {
       return res.status(400).json({
         success: false,
         message: "not a registered user",
+      });
+    }
+    if (userExist.role !== "user") {
+      return res.status(400).json({
+        success: false,
+        message: "you are not a user",
       });
     }
     const distributors = await User.find({ role: "Distributor" });
@@ -99,20 +108,245 @@ const createOrder = async (req, res) => {
         },
       }
     );
-
-    return res.json({
+    return res.status(400).json({
       success: true,
       message: "Payment initialized successfully",
       authorization_url: response.data.data.authorization_url,
     });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       message: "Payment initialization failed",
     });
   }
 };
+
+const distPlaceOrder = async (req, res) => {
+  const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+
+  const { userId, address, distEmail } = req.body;
+
+  try {
+    const cart = await Cart.findOne({ orderBy: userId }).populate(
+      "products.productId"
+    );
+    if (!cart || cart.products.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Cart is empty",
+      });
+    }
+    const userExist = await User.findOne({ email: distEmail });
+    if (!userExist) {
+      return res.status(400).json({
+        success: false,
+        message: "not a registered user",
+      });
+    }
+    if (userExist.role !== "Distributor") {
+      return res.status(400).json({
+        success: false,
+        message: "you are not a Distributor",
+      });
+    }
+    const productOrdered = cart.products.map((item) => ({
+      productId: item.productId,
+      count: item.count,
+      price: item.price,
+      title: item.title,
+      description: item.description,
+      category: item.category,
+      brand: item.brand,
+      quantity: item.quantity,
+      images: item.images,
+      rating: item.rating,
+      totalRating: item.totalRating,
+    }));
+    const totalAmount = cart.products.reduce(
+      (sum, product) => sum + product.price * product.count,
+      0
+    );
+    const newOrder = new orderModel({
+      userId,
+      products: productOrdered,
+      orderTotal: totalAmount,
+      orderStatus: "Processing",
+      address: address,
+      payment: true,
+    });
+    await newOrder.save();
+    await Cart.findOneAndUpdate(
+      { orderBy: userId },
+      { $set: { products: [] } }
+    );
+
+    // Fetch user email for payment
+    const user = await User.findById(userId);
+    const email = user.email;
+
+    const response = await axios.post(
+      "https://api.paystack.co/transaction/initialize",
+      {
+        email,
+        amount: totalAmount * 100, // Convert to cents/kobo
+        currency: "NGN",
+        metadata: {
+          orderId: newOrder._id,
+          custom_fields: [
+            {
+              display_name: "Order ID",
+              variable_name: "order_id",
+              value: newOrder._id.toString(),
+            },
+          ],
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Payment initialized successfully",
+      authorization_url: response.data.data.authorization_url,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: "Payment initialization failed",
+    });
+  }
+};
+// const distPlaceOrder = async (req, res) => {
+//   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+
+//   const { userId, address, distEmail } = req.body;
+
+//   try {
+//     // Check if cart exists and is not empty
+//     const cart = await Cart.findOne({ orderBy: userId }).populate(
+//       "products.productId"
+//     );
+//     if (!cart || cart.products.length === 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Cart is empty",
+//       });
+//     }
+
+//     // Check if user exists and is a Distributor
+//     const userExist = await User.findOne({ email: distEmail });
+//     if (!userExist) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Not a registered user",
+//       });
+//     }
+//     if (userExist.role !== "Distributor") {
+//       return res.status(400).json({
+//         success: false,
+//         message: "You are not a Distributor",
+//       });
+//     }
+
+//     // Process the order
+//     const productOrdered = cart.products.map((item) => ({
+//       productId: item.productId,
+//       count: item.count,
+//       price: item.price,
+//       title: item.title,
+//       description: item.description,
+//       category: item.category,
+//       brand: item.brand,
+//       quantity: item.quantity,
+//       images: item.images,
+//       rating: item.rating,
+//       totalRating: item.totalRating,
+//     }));
+
+//     const totalAmount = cart.products.reduce(
+//       (sum, product) => sum + product.price * product.count,
+//       0
+//     );
+
+//     // Create the new order
+//     const newOrder = new orderModel({
+//       userId,
+//       products: productOrdered,
+//       orderTotal: totalAmount,
+//       orderStatus: "Processing",
+//       address: address,
+//       payment: true,
+//     });
+
+//     await newOrder.save();
+
+//     // Clear the cart after placing the order
+//     await Cart.findOneAndUpdate(
+//       { orderBy: userId },
+//       { $set: { products: [] } }
+//     );
+
+//     // Fetch user email for payment
+//     const user = await User.findById(userId);
+//     const email = user.email;
+
+//     // Initialize payment with Paystack
+//     const response = await axios.post(
+//       "https://api.paystack.co/transaction/initialize",
+//       {
+//         email,
+//         amount: totalAmount * 100, // Convert to kobo (smallest currency unit)
+//         currency: "NGN",
+//         metadata: {
+//           orderId: newOrder._id,
+//           custom_fields: [
+//             {
+//               display_name: "Order ID",
+//               variable_name: "order_id",
+//               value: newOrder._id.toString(),
+//             },
+//           ],
+//         },
+//       },
+//       {
+//         headers: {
+//           Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+//           "Content-Type": "application/json",
+//         },
+//       }
+//     );
+
+//     // Log the response to help with debugging
+//     console.log("Paystack response:", response.data);
+
+//     // Handle the success response from Paystack
+//     if (response.data.status) {
+//       return res.status(200).json({
+//         success: true,
+//         message: "Payment initialized successfully",
+//         authorization_url: response.data.data.authorization_url,
+//       });
+//     } else {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Payment initialization failed",
+//         error: response.data.message || "Unknown error",
+//       });
+//     }
+
+//   } catch (error) {
+//     console.error("Error during payment initialization:", error.message);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Payment initialization failed",
+//       error: error.message,
+//     });
+//   }
+// };
 
 const verifyOrder = async (req, res) => {
   const { orderId } = req.params;
@@ -148,6 +382,357 @@ const fetchAllOrder = async (req, res) => {
       message: " all available orders",
       allOrder,
     });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const allOrdersCompleted = async (req, res) => {
+  try {
+    const dist = req.user;
+    if (dist.role !== "Distributor") {
+      return res.status(400).json({
+        success: false,
+        message: "you must be a distributor",
+      });
+    }
+    // confirm that user select this singular distributor when he is making orders
+    const allOrder = await orderModel.find({});
+    // selected address when making orders
+    const allOrderAddress = allOrder.filter((order) => {
+      return order.location === dist.location;
+      // return order.address.equals(dist.address);
+    });
+    if (allOrderAddress.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no order made to your location",
+      });
+    } else {
+      const completedOrders = allOrderAddress.filter((order) => {
+        return order.orderStatus === "Delivered";
+      });
+      if (completedOrders.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "No order has been cancelled in your location",
+        });
+      } else {
+        const numberOfCompOrders = completedOrders.length;
+        res.json({
+          success: true,
+          message: " all available orders",
+          completedOrders,
+          numberOfCompOrders,
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const allOrdersByDistPlaceToAdmin = async (req, res) => {
+  try {
+    const dist = req.user;
+    if (dist.role !== "admin") {
+      return res.status(400).json({
+        success: false,
+        message: "you must be an admin",
+      });
+    }
+    const allOrdersWithUserDetails = await orderModel
+      .find({})
+      .populate("userId");
+    const orderByADist = allOrdersWithUserDetails.filter((order) => {
+      return order.userId && order.userId.role === "Distributor";
+    });
+    if (orderByADist.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no distributor has place order just yet",
+      });
+    }
+    const allOrdersByDist = orderByADist.length;
+    if (allOrdersByDist) {
+      res.status(200).json({
+        success: true,
+        message: "all orders by distributor",
+        allOrdersByDist,
+        orderByADist,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const allOrdersDeliveredByAdminToDist = async (req, res) => {
+  try {
+    const isAdmin = req.user;
+    if (isAdmin.role !== "admin") {
+      return res.status(400).json({
+        success: false,
+        message: "you must be an admin",
+      });
+    }
+    const allOrdersWithUserDetails = await orderModel
+      .find({})
+      .populate("userId");
+    const orderByADist = allOrdersWithUserDetails.filter((order) => {
+      return order.userId && order.userId.role === "Distributor";
+    });
+    if (orderByADist.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no distributor has place order just yet",
+      });
+    }
+    const DeliveredOrders = orderByADist.filter((order) => {
+      return order.orderStatus === "Delivered";
+    });
+    if (DeliveredOrders.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no orders delivered",
+      });
+    }
+    console.log("DeliveredOrders",DeliveredOrders)
+    const allOrdersByDistDelivered = DeliveredOrders.length;
+    if (allOrdersByDistDelivered) {
+      res.status(200).json({
+        success: true,
+        message: "all orders by distributor",
+        allOrdersByDistDelivered,
+        DeliveredOrders,
+      });
+    }
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+    });
+  }
+};
+
+const allOrdersProcessingByAdminToDist = async (req, res) => {
+  try {
+    const isAdmin = req.user;
+    if (isAdmin.role !== "admin") {
+      return res.status(400).json({
+        success: false,
+        message: "you must be an admin",
+      });
+    }
+    const allOrdersWithUserDetails = await orderModel
+      .find({})
+      .populate("userId");
+    const orderByADist = allOrdersWithUserDetails.filter((order) => {
+      return order.userId && order.userId.role === "Distributor";
+    });
+    if (orderByADist.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no distributor has place order just yet",
+      });
+    }
+    const processingOrders = orderByADist.filter((order) => {
+      return order.orderStatus === "Processing";
+    });
+    if (processingOrders.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no orders are processing",
+      });
+    }
+    console.log("processingOrders",processingOrders)
+    const allOrdersByDistDelivered = processingOrders.length;
+    if (allOrdersByDistDelivered) {
+      res.status(200).json({
+        success: true,
+        message: "all orders by distributor",
+        allOrdersByDistDelivered,
+        processingOrders,
+      });
+    }
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+    });
+  }
+};
+
+const allOrdersCancelByAdminToDist = async (req, res) => {
+  try {
+    const isAdmin = req.user;
+    if (isAdmin.role !== "admin") {
+      return res.status(400).json({
+        success: false,
+        message: "you must be an admin",
+      });
+    }
+    const allOrdersWithUserDetails = await orderModel
+      .find({})
+      .populate("userId");
+    const orderByADist = allOrdersWithUserDetails.filter((order) => {
+      return order.userId && order.userId.role === "Distributor";
+    });
+    if (orderByADist.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no distributor has place order just yet",
+      });
+    }
+    const cancelledOrders = orderByADist.filter((order) => {
+      return order.orderStatus === "cancelled";
+    });
+    if (cancelledOrders.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no orders are cancelled",
+      });
+    }
+    console.log("cancelledOrders",cancelledOrders)
+    const allOrdersByDistDelivered = cancelledOrders.length;
+    if (allOrdersByDistDelivered) {
+      res.status(200).json({
+        success: true,
+        message: "all orders by distributor",
+        allOrdersByDistDelivered,
+        cancelledOrders,
+      });
+    }
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+    });
+  }
+};
+
+const allOrdersProcessing = async (req, res) => {
+  try {
+    const dist = req.user;
+    if (dist.role !== "Distributor") {
+      return res.status(400).json({
+        success: false,
+        message: "you must be a distributor",
+      });
+    }
+    // confirm that user select this singular distributor when he is making orders
+    const allOrder = await orderModel.find({});
+    // selected address when making orders
+    const allOrderAddress = allOrder.filter((order) => {
+      return order.location === dist.location;
+    });
+    if (allOrderAddress.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no order made to your location",
+      });
+    } else {
+      const processingOrders = allOrderAddress.filter((order) => {
+        return order.orderStatus === "Processing";
+      });
+      if (processingOrders.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "no order is processing at the moment",
+        });
+      } else {
+        const allOrdersProcessing = processingOrders.length;
+        res.status(200).json({
+          success: true,
+          message: " all available orders",
+          processingOrders,
+          allOrdersProcessing,
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const allAvailableOrders = async (req, res) => {
+  try {
+    const dist = req.user;
+    if (dist.role !== "Distributor") {
+      return res.status(400).json({
+        success: false,
+        message: "you must be a distributor",
+      });
+    }
+    // confirm that user select this singular distributor when he is making orders
+    const allOrder = await orderModel.find({});
+    // selected address when making orders
+    const allOrderAddress = allOrder.filter((order) => {
+      return order.location === dist.location;
+    });
+    if (allOrderAddress.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no order made to your location",
+      });
+    } else {
+      const totalNumberOfOrders = allOrderAddress.length;
+      if (totalNumberOfOrders === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "no orders available in your address",
+        });
+      } else {
+        res.json({
+          success: true,
+          message: " all available orders",
+          allOrderAddress,
+          totalNumberOfOrders,
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const allOrdersCancelled = async (req, res) => {
+  try {
+    const dist = req.user;
+    if (dist.role !== "Distributor") {
+      return res.status(400).json({
+        success: false,
+        message: "you must be a distributor",
+      });
+    }
+    // confirm that user select this singular distributor when he is making orders
+    const allOrder = await orderModel.find({});
+    // selected address when making orders
+    const allOrderAddress = allOrder.filter((order) => {
+      return order.location === dist.location;
+      // return order.address.equals(dist.address);
+    });
+    if (allOrderAddress.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no order made to your location",
+      });
+    } else {
+      const cancelledOrders = allOrderAddress.filter((order) => {
+        return order.orderStatus === "Cancelled";
+      });
+      if (cancelledOrders.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "No order has been cancelled in your location",
+        });
+      } else {
+        const numberOfCancelledOrders = cancelledOrders.length;
+        res.json({
+          success: true,
+          message: " all available orders",
+          cancelledOrders,
+          numberOfCancelledOrders,
+        });
+      }
+    }
   } catch (error) {
     console.log(error);
   }
@@ -515,4 +1100,13 @@ export {
   filterOrdersByStatus,
   filterOrdersByDateRange,
   fulfilDistOrdersByAdmin,
+  distPlaceOrder,
+  allOrdersCompleted,
+  allOrdersCancelled,
+  allOrdersProcessing,
+  allAvailableOrders,
+  allOrdersByDistPlaceToAdmin,
+  allOrdersDeliveredByAdminToDist,
+  allOrdersProcessingByAdminToDist,
+  allOrdersCancelByAdminToDist
 };
