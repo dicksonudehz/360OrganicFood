@@ -28,7 +28,7 @@ const createOrder = async (req, res) => {
     if (userExist.role !== "user") {
       return res.status(400).json({
         success: false,
-        message: "you are not a user",
+        message: "you are not a user, use other option",
       });
     }
     const distributors = await User.find({ role: "Distributor" });
@@ -124,8 +124,7 @@ const createOrder = async (req, res) => {
 const distPlaceOrder = async (req, res) => {
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-  const { userId, address, distEmail } = req.body;
-
+  const { userId, address } = req.body;
   try {
     const cart = await Cart.findOne({ orderBy: userId }).populate(
       "products.productId"
@@ -136,13 +135,14 @@ const distPlaceOrder = async (req, res) => {
         message: "Cart is empty",
       });
     }
-    const userExist = await User.findOne({ email: distEmail });
+    const userExist = await User.findById({ _id: userId });
     if (!userExist) {
       return res.status(400).json({
         success: false,
         message: "not a registered user",
       });
     }
+    console.log("userExist",userExist)
     if (userExist.role !== "Distributor") {
       return res.status(400).json({
         success: false,
@@ -497,7 +497,7 @@ const allOrdersDeliveredByAdminToDist = async (req, res) => {
         message: "no orders delivered",
       });
     }
-    console.log("DeliveredOrders",DeliveredOrders)
+    console.log("DeliveredOrders", DeliveredOrders);
     const allOrdersByDistDelivered = DeliveredOrders.length;
     if (allOrdersByDistDelivered) {
       res.status(200).json({
@@ -544,7 +544,7 @@ const allOrdersProcessingByAdminToDist = async (req, res) => {
         message: "no orders are processing",
       });
     }
-    console.log("processingOrders",processingOrders)
+    console.log("processingOrders", processingOrders);
     const allOrdersByDistDelivered = processingOrders.length;
     if (allOrdersByDistDelivered) {
       res.status(200).json({
@@ -576,6 +576,7 @@ const allOrdersCancelByAdminToDist = async (req, res) => {
     const orderByADist = allOrdersWithUserDetails.filter((order) => {
       return order.userId && order.userId.role === "Distributor";
     });
+    console.log("orderByADist", orderByADist);
     if (orderByADist.length === 0) {
       return res.status(400).json({
         success: false,
@@ -583,20 +584,20 @@ const allOrdersCancelByAdminToDist = async (req, res) => {
       });
     }
     const cancelledOrders = orderByADist.filter((order) => {
-      return order.orderStatus === "cancelled";
+      return order.orderStatus === "Cancelled";
     });
+   
     if (cancelledOrders.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "no orders are cancelled",
+        message: "No distributor order cancelled",
       });
     }
-    console.log("cancelledOrders",cancelledOrders)
     const allOrdersByDistDelivered = cancelledOrders.length;
     if (allOrdersByDistDelivered) {
       res.status(200).json({
         success: true,
-        message: "all orders by distributor",
+        message: "all orders by your distributors",
         allOrdersByDistDelivered,
         cancelledOrders,
       });
@@ -1108,5 +1109,5 @@ export {
   allOrdersByDistPlaceToAdmin,
   allOrdersDeliveredByAdminToDist,
   allOrdersProcessingByAdminToDist,
-  allOrdersCancelByAdminToDist
+  allOrdersCancelByAdminToDist,
 };
