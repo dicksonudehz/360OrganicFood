@@ -142,7 +142,7 @@ const distPlaceOrder = async (req, res) => {
         message: "not a registered user",
       });
     }
-    console.log("userExist",userExist)
+    console.log("userExist", userExist);
     if (userExist.role !== "Distributor") {
       return res.status(400).json({
         success: false,
@@ -586,7 +586,7 @@ const allOrdersCancelByAdminToDist = async (req, res) => {
     const cancelledOrders = orderByADist.filter((order) => {
       return order.orderStatus === "Cancelled";
     });
-   
+
     if (cancelledOrders.length === 0) {
       return res.status(400).json({
         success: false,
@@ -998,11 +998,6 @@ const allOrdersByDistr = async (req, res) => {
       });
     }
     if (userExist) {
-      // const filteredDistributors = allOrders.map((order) => {
-      //   return order.Distributor.filter((dist) =>
-      //     dist._id.equals(userExist._id)
-      //   );
-      // });
       const allOrders = await orderModel.find({});
       const distributorOrders = allOrders.filter((order) => {
         return order.Distributor.some((dist) => dist._id.equals(userExist._id));

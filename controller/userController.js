@@ -157,24 +157,43 @@ const blockDistributor = async (req, res) => {
   const { userId } = req.body;
   try {
     const blockDistributor = await User.findById(userId);
-    if (blockDistributor.role === "Distributor") {
-      if (!blockDistributor) {
-        res.status(400).json({
-          success: false,
-          message: "distributor does not exist",
-        });
-      } else {
-        blockDistributor.isBlocked = "true";
-      }
+
+    if (blockDistributor.role !== "Distributor") {
+      res.status(400).json({
+        success: false,
+        message: "user is not a distributor",
+      });
+    } else {
+      blockDistributor.isBlocked = "true";
       res.status(200).json({
         success: true,
         message: "this distributor is block",
         blockDistributor,
       });
-    } else {
+    }
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "error",
+    });
+  }
+};
+const unblockblockDistributor = async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const blockDistributor = await User.findById(userId);
+
+    if (blockDistributor.role !== "Distributor") {
       res.status(400).json({
         success: false,
-        message: "user must be a distributor",
+        message: "user is not a distributor",
+      });
+    } else {
+      blockDistributor.isBlocked = "false";
+      res.status(200).json({
+        success: true,
+        message: "this distributor is block",
+        blockDistributor,
       });
     }
   } catch (error) {
@@ -671,6 +690,7 @@ export {
   fetchAlldistributor,
   getSingleDistributor,
   blockDistributor,
+  unblockblockDistributor,
   deleteDistributor,
   allDistributorByLocation,
   distributorMostSaleProduct,

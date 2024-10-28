@@ -16,6 +16,7 @@ import {
   loginUser,
   registerUser,
   resetPassword,
+  unblockblockDistributor,
   updatedRole,
   updatePassword,
   verifyOTP,
@@ -29,6 +30,12 @@ userRouter.post("/disRegister", authMiddleware, isAdmin, createDistributor);
 userRouter.get("/distributor", authMiddleware, fetchAlldistributor);
 userRouter.get("/singleDistributor", authMiddleware, getSingleDistributor);
 userRouter.post("/blockDistributor", authMiddleware, isAdmin, blockDistributor);
+userRouter.post(
+  "/unblockblockDistributor",
+  authMiddleware,
+  isAdmin,
+  unblockblockDistributor
+);
 userRouter.delete(
   "/deleteDistributor/:id",
   authMiddleware,
