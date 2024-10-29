@@ -164,11 +164,15 @@ const blockDistributor = async (req, res) => {
         message: "user is not a distributor",
       });
     } else {
-      blockDistributor.isBlocked = "true";
+      const distBlock = await User.findByIdAndUpdate(
+        userId,
+        { isBlocked: true },
+        { new: true }
+      );
       res.status(200).json({
         success: true,
         message: "this distributor is block",
-        blockDistributor,
+        distBlock,
       });
     }
   } catch (error) {
@@ -189,11 +193,15 @@ const unblockblockDistributor = async (req, res) => {
         message: "user is not a distributor",
       });
     } else {
-      blockDistributor.isBlocked = "false";
+      const distUnblock = await User.findByIdAndUpdate(
+        userId,
+        { isBlocked: false },
+        { new: true }
+      );
       res.status(200).json({
         success: true,
         message: "this distributor is block",
-        blockDistributor,
+        distUnblock,
       });
     }
   } catch (error) {

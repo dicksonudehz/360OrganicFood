@@ -29,8 +29,8 @@ userRouter.post("/register", registerUser);
 userRouter.post("/disRegister", authMiddleware, isAdmin, createDistributor);
 userRouter.get("/distributor", authMiddleware, fetchAlldistributor);
 userRouter.get("/singleDistributor", authMiddleware, getSingleDistributor);
-userRouter.post("/blockDistributor", authMiddleware, isAdmin, blockDistributor);
-userRouter.post(
+userRouter.put("/blockDistributor", authMiddleware, isAdmin, blockDistributor);
+userRouter.put(
   "/unblockblockDistributor",
   authMiddleware,
   isAdmin,
