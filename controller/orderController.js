@@ -18,6 +18,7 @@ const createOrder = async (req, res) => {
         message: "Cart is empty",
       });
     }
+    //select a distributor email
     const userExist = await User.findOne({ email: distEmail });
     if (!userExist) {
       return res.status(400).json({
@@ -25,13 +26,16 @@ const createOrder = async (req, res) => {
         message: "not a registered user",
       });
     }
-    if (userExist.role !== "user") {
+    //who is placing order is he a user
+    const userPlaceOrder = await User.findById({ _id: userId });
+    if (userPlaceOrder.role !== "user") {
       return res.status(400).json({
         success: false,
         message: "you are not a user, use other option",
       });
     }
     const distributors = await User.find({ role: "Distributor" });
+    //select a distributor to supply your goods
     const selectedDistributor = distributors.filter((singleDis) => {
       return singleDis._id.equals(userExist._id);
     });
@@ -41,6 +45,7 @@ const createOrder = async (req, res) => {
         message: "select a distributor closest to you",
       });
     }
+    //select a distributor location to supply your goods
     const distLocation = selectedDistributor[0].location;
     if (!distLocation) {
       return res.status(400).json({
@@ -108,12 +113,13 @@ const createOrder = async (req, res) => {
         },
       }
     );
-    return res.status(400).json({
+    return res.status(200).json({
       success: true,
       message: "Payment initialized successfully",
       authorization_url: response.data.data.authorization_url,
     });
   } catch (error) {
+    console.log(error);
     return res.status(400).json({
       success: false,
       message: "Payment initialization failed",
@@ -142,7 +148,6 @@ const distPlaceOrder = async (req, res) => {
         message: "not a registered user",
       });
     }
-    console.log("userExist", userExist);
     if (userExist.role !== "Distributor") {
       return res.status(400).json({
         success: false,
@@ -377,13 +382,27 @@ const verifyOrder = async (req, res) => {
 const fetchAllOrder = async (req, res) => {
   try {
     const allOrder = await orderModel.find({});
+    const allUsers = await User.find({});
+    const ordersWithUserDetails = allOrder.map((order) => {
+      const users = allUsers.find(
+        (user) => user._id.toString() === order.userId.toString()
+      );
+      return {
+        ...order.toObject(),
+        userDetails: users ? users.toObject() : null
+      };
+    });
     res.json({
       success: true,
       message: " all available orders",
-      allOrder,
+      ordersWithUserDetails,
     });
   } catch (error) {
     console.log(error);
+    res.status(400).json({
+      success: false,
+      message: " fetching orders failed",
+    });
   }
 };
 
