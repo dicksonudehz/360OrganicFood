@@ -387,9 +387,10 @@ const fetchAllOrder = async (req, res) => {
       const users = allUsers.find(
         (user) => user._id.toString() === order.userId.toString()
       );
+      console.log(users);
       return {
         ...order.toObject(),
-        userDetails: users ? users.toObject() : null
+        userDetails: users ? users.toObject() : null,
       };
     });
     res.json({
